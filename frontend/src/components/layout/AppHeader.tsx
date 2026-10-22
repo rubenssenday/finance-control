@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { AccountSwitcher } from './AccountSwitcher';
-import { WalletCards, LogOut, Users, Settings } from 'lucide-react';
+import { WalletCards, LogOut, Users, Settings, Tags } from 'lucide-react';
 
 export function AppHeader() {
   const { user, activeAccount, logout } = useAuth();
@@ -32,13 +32,23 @@ export function AppHeader() {
         {/* User Navigation Actions */}
         <div className="flex items-center space-x-3">
           {activeAccount && (
-            <Link
-              href="/settings/members"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-            >
-              <Users className="w-4 h-4 text-slate-400" />
-              <span className="hidden md:inline">Members</span>
-            </Link>
+            <>
+              <Link
+                href="/settings/categories"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <Tags className="w-4 h-4 text-slate-400" />
+                <span className="hidden md:inline">Categories</span>
+              </Link>
+
+              <Link
+                href="/settings/members"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <Users className="w-4 h-4 text-slate-400" />
+                <span className="hidden md:inline">Members</span>
+              </Link>
+            </>
           )}
 
           {user && (

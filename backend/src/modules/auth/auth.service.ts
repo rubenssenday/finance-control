@@ -12,6 +12,7 @@ import { PasswordService } from './password.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role, InvitationStatus } from '@prisma/client';
+import { CategoriesService } from '../categories/categories.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
+    private readonly categoriesService: CategoriesService,
   ) {}
 
   /**
@@ -65,6 +67,9 @@ export class AuthService {
           role: Role.ADMINISTRATOR,
         },
       });
+
+      // Seed 8 default categories for the new account
+      await this.categoriesService.seedDefaultCategories(account.id, tx);
 
       // Claim pending invitations for this email
       const pendingInvitations = await tx.accountInvitation.findMany({
@@ -212,6 +217,9 @@ export class AuthService {
             role: Role.ADMINISTRATOR,
           },
         });
+
+        // Seed 8 default categories for the new account
+        await this.categoriesService.seedDefaultCategories(account.id, tx);
 
         // Claim pending invitations
         const pendingInvitations = await tx.accountInvitation.findMany({

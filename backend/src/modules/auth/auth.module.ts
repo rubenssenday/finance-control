@@ -7,6 +7,8 @@ import { PasswordService } from './password.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 
+import { CategoriesModule } from '../categories/categories.module';
+
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
@@ -14,6 +16,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
       secret: process.env.JWT_ACCESS_SECRET || 'fallback_jwt_access_secret_key',
       signOptions: { expiresIn: '15m' },
     }),
+    CategoriesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, PasswordService, JwtStrategy, GoogleStrategy],
