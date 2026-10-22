@@ -27,34 +27,51 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
 
 ### 1. Clonar o Repositório e Instalar Dependências
 
-No diretório raiz do projeto, instale as dependências de todo o monorepo:
+### 🐳 Opção 1: Execução Total via Docker (Recomendado para Deploy/Teste Rápido)
+
+Para construir as imagens e iniciar toda a stack (PostgreSQL, Backend NestJS e Frontend Next.js) com um único comando:
 
 ```bash
-# Na raiz do projeto:
+# Construir as imagens e iniciar todos os containers em background:
+docker compose up --build -d
+```
+
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **Backend API:** [http://localhost:3001/api/v1](http://localhost:3001/api/v1)
+- **PostgreSQL:** `localhost:5432`
+
+> **Como funciona:** O container do backend aguarda o banco estar saudável (*healthy*), executa as migrações do Prisma automaticamente (`prisma migrate deploy`) e inicia a API. O container do frontend roda em modo otimizado *standalone*.
+
+Para visualizar os logs ou parar os containers:
+```bash
+# Ver logs de todos os serviços:
+docker compose logs -f
+
+# Parar os serviços:
+docker compose down
+```
+
+---
+
+### 💻 Opção 2: Desenvolvimento Local (Com Hot-Reload)
+
+Caso queira desenvolver e testar com *Hot-Reload* em tempo real:
+
+#### 1. Instalar Dependências na Raiz
+```bash
 npm install
 ```
 
----
-
-### 2. Subir o Banco de Dados (PostgreSQL)
-
-Você pode subir uma instância do PostgreSQL 16 pronta para uso com o Docker Compose:
-
+#### 2. Subir apenas o Banco de Dados via Docker
 ```bash
-# Iniciar o container do PostgreSQL em background:
-docker compose up -d
+# Sobe exclusivamente o PostgreSQL:
+docker compose up -d postgres
 ```
 
-> **Nota:** Caso utilize um PostgreSQL já instalado localmente, crie um banco de dados chamado `financial_db` e configure as credenciais no arquivo `.env` do backend.
+#### 3. Configurar as Variáveis de Ambiente
 
----
-
-### 3. Configurar as Variáveis de Ambiente
-
-#### A. Backend (`backend/.env`)
-
-Copie o arquivo de exemplo e ajuste se necessário:
-
+##### A. Backend (`backend/.env`)
+Copie o arquivo de exemplo:
 ```bash
 cp backend/.env.example backend/.env
 ```
