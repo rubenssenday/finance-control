@@ -125,7 +125,7 @@ export default function RegisterPage() {
         {/* Credentials Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label htmlFor="displayName" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Full Name
             </label>
             <div className="relative">
@@ -133,7 +133,10 @@ export default function RegisterPage() {
                 <UserIcon className="w-4 h-4" />
               </div>
               <input
+                id="displayName"
+                name="displayName"
                 type="text"
+                autoComplete="name"
                 required
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
@@ -144,7 +147,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label htmlFor="email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Email Address
             </label>
             <div className="relative">
@@ -152,7 +155,10 @@ export default function RegisterPage() {
                 <Mail className="w-4 h-4" />
               </div>
               <input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -163,7 +169,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label htmlFor="password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -171,7 +177,10 @@ export default function RegisterPage() {
                 <Lock className="w-4 h-4" />
               </div>
               <input
+                id="password"
+                name="password"
                 type="password"
+                autoComplete="new-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

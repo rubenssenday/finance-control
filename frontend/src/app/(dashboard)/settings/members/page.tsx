@@ -311,11 +311,14 @@ export default function MembersSettingsPage() {
 
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label htmlFor="inviteEmail" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                   Email Address
                 </label>
                 <input
+                  id="inviteEmail"
+                  name="inviteEmail"
                   type="email"
+                  autoComplete="email"
                   required
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
@@ -325,10 +328,12 @@ export default function MembersSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label htmlFor="inviteRole" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                   Workspace Role
                 </label>
                 <select
+                  id="inviteRole"
+                  name="inviteRole"
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as 'ADMINISTRATOR' | 'MEMBER')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-sm text-slate-900 transition-all outline-hidden"
