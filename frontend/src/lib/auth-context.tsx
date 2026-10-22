@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { apiClient } from './api-client';
 
 export interface User {
@@ -30,12 +31,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [activeAccount, setActiveAccount] = useState<Account | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSessionData = useCallback(async () => {
+    // Skip session checks on login/register pages
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/login') || currentPath.startsWith('/register')) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       setIsLoading(true);
       // Fetch current authenticated user
@@ -67,8 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchSessionData();
-  }, [fetchSessionData]);
+    if (pathname && !pathname.startsWith('/login') && !pathname.startsWith('/register')) {
+      fetchSessionData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [pathname, fetchSessionData]);
 
   const switchAccount = async (accountId: string) => {
     try {

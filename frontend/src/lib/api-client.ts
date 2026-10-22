@@ -69,14 +69,22 @@ export async function apiClient<T = any>(
           return await apiClient<T>(endpoint, options);
         } else {
           processQueue(new Error('Session expired'));
-          if (typeof window !== 'undefined') {
+          if (
+            typeof window !== 'undefined' &&
+            !window.location.pathname.startsWith('/login') &&
+            !window.location.pathname.startsWith('/register')
+          ) {
             window.location.href = '/login';
           }
           throw new Error('Session expired. Please log in again.');
         }
       } catch (refreshErr) {
         processQueue(refreshErr);
-        if (typeof window !== 'undefined') {
+        if (
+          typeof window !== 'undefined' &&
+          !window.location.pathname.startsWith('/login') &&
+          !window.location.pathname.startsWith('/register')
+        ) {
           window.location.href = '/login';
         }
         throw refreshErr;
