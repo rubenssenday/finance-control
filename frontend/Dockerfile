@@ -10,7 +10,7 @@ WORKDIR /app
 # ==========================================
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # ==========================================
 # 3. Builder Stage
@@ -51,4 +51,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "if [ -f server.js ]; then node server.js; elif [ -f frontend/server.js ]; then node frontend/server.js; else node .next/standalone/server.js; fi"]

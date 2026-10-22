@@ -11,7 +11,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN npm install
 
 # ==========================================
 # 3. Builder Stage
@@ -39,4 +39,4 @@ COPY --from=builder /app/package.json ./package.json
 EXPOSE 3001
 
 # Run database migrations and start the NestJS server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && if [ -f dist/main.js ]; then node dist/main.js; else node dist/src/main.js; fi"]
