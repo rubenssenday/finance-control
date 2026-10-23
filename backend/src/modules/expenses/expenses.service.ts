@@ -545,6 +545,69 @@ export class ExpensesService {
       return { deletedCount: res.count };
     }
 
+    if (scope === 'FUTURE' && (expense.recurrenceRuleId || expense.isRecurring)) {
+      const whereClause: Prisma.ExpenseWhereInput = {
+        accountId,
+        dueDate: { gte: expense.dueDate },
+      };
+
+      if (expense.recurrenceRuleId) {
+        whereClause.recurrenceRuleId = expense.recurrenceRuleId;
+      } else {
+        whereClause.isRecurring = true;
+        whereClause.description = expense.description;
+      }
+
+      const futureExpenses = await this.prisma.expense.findMany({
+        where: whereClause,
+      });
+
+      for (const exp of futureExpenses) {
+        if (exp.invoiceId) {
+          await this.prisma.invoice.update({
+            where: { id: exp.invoiceId },
+            data: {
+              totalAmount: {
+                decrement: exp.amount,
+              },
+            },
+          });
+        }
+      }
+
+      const res = await this.prisma.expense.deleteMany({
+        where: whereClause,
+      });
+
+      if (expense.recurrenceRuleId) {
+        const remainingCount = await this.prisma.expense.count({
+          where: {
+            accountId,
+            recurrenceRuleId: expense.recurrenceRuleId,
+          },
+        });
+
+        if (remainingCount === 0) {
+          await this.prisma.recurrenceRule
+            .delete({
+              where: { id: expense.recurrenceRuleId },
+            })
+            .catch(() => null);
+        } else {
+          await this.prisma.recurrenceRule
+            .update({
+              where: { id: expense.recurrenceRuleId },
+              data: {
+                endDate: new Date(new Date(expense.dueDate).getTime() - 1000),
+              },
+            })
+            .catch(() => null);
+        }
+      }
+
+      return { deletedCount: res.count };
+    }
+
     // Single deletion
     if (expense.invoiceId) {
       await this.prisma.invoice.update({

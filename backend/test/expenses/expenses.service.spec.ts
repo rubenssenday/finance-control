@@ -34,6 +34,11 @@ describe('ExpensesService', () => {
         updateMany: jest.fn(),
         delete: jest.fn(),
         deleteMany: jest.fn(),
+        count: jest.fn(),
+      },
+      recurrenceRule: {
+        delete: jest.fn(),
+        update: jest.fn(),
       },
     };
 
@@ -165,6 +170,39 @@ describe('ExpensesService', () => {
       const res = await service.delete('acc-1', 'exp-2', 'FUTURE');
       expect(res.deletedCount).toBe(2);
       expect(prisma.expense.deleteMany).toHaveBeenCalled();
+    });
+
+    it('should delete future recurring expenses when scope is FUTURE', async () => {
+      const now = new Date(Date.UTC(2026, 9, 23));
+      prisma.expense.findFirst.mockResolvedValue({
+        id: 'exp-rec-1',
+        isRecurring: true,
+        recurrenceRuleId: 'rule-1',
+        dueDate: now,
+        amount: new Prisma.Decimal('50.00'),
+      });
+
+      prisma.expense.findMany.mockResolvedValue([
+        { id: 'exp-rec-1', amount: new Prisma.Decimal('50.00'), dueDate: now },
+        { id: 'exp-rec-2', amount: new Prisma.Decimal('50.00'), dueDate: new Date(Date.UTC(2026, 10, 23)) },
+      ]);
+
+      prisma.expense.deleteMany.mockResolvedValue({ count: 2 });
+      prisma.expense.count.mockResolvedValue(0);
+      prisma.recurrenceRule.delete.mockResolvedValue({ id: 'rule-1' });
+
+      const res = await service.delete('acc-1', 'exp-rec-1', 'FUTURE');
+      expect(res.deletedCount).toBe(2);
+      expect(prisma.expense.deleteMany).toHaveBeenCalledWith({
+        where: {
+          accountId: 'acc-1',
+          recurrenceRuleId: 'rule-1',
+          dueDate: { gte: now },
+        },
+      });
+      expect(prisma.recurrenceRule.delete).toHaveBeenCalledWith({
+        where: { id: 'rule-1' },
+      });
     });
   });
 
