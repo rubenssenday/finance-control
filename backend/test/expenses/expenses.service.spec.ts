@@ -167,4 +167,56 @@ describe('ExpensesService', () => {
       expect(prisma.expense.deleteMany).toHaveBeenCalled();
     });
   });
+
+  describe('list', () => {
+    it('should filter by dueDate by default when month and year are specified', async () => {
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      await service.list('acc-1', {
+        year: 2026,
+        month: 10,
+      });
+
+      expect(prisma.expense.findMany).toHaveBeenCalledWith({
+        where: {
+          accountId: 'acc-1',
+          dueDate: {
+            gte: new Date(Date.UTC(2026, 9, 1, 0, 0, 0)),
+            lte: new Date(Date.UTC(2026, 10, 0, 23, 59, 59, 999)),
+          },
+        },
+        include: {
+          category: { select: { id: true, name: true, color: true, icon: true } },
+          card: { select: { id: true, nickname: true, brand: true } },
+        },
+        orderBy: [{ dueDate: 'asc' }, { transactionDate: 'asc' }],
+      });
+    });
+
+    it('should filter by transactionDate when dateType is transactionDate', async () => {
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      await service.list('acc-1', {
+        year: 2026,
+        month: 10,
+        dateType: 'transactionDate',
+      });
+
+      expect(prisma.expense.findMany).toHaveBeenCalledWith({
+        where: {
+          accountId: 'acc-1',
+          transactionDate: {
+            gte: new Date(Date.UTC(2026, 9, 1, 0, 0, 0)),
+            lte: new Date(Date.UTC(2026, 10, 0, 23, 59, 59, 999)),
+          },
+        },
+        include: {
+          category: { select: { id: true, name: true, color: true, icon: true } },
+          card: { select: { id: true, nickname: true, brand: true } },
+        },
+        orderBy: [{ dueDate: 'asc' }, { transactionDate: 'asc' }],
+      });
+    });
+  });
 });
+

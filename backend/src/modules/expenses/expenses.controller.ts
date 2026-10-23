@@ -39,6 +39,7 @@ export class ExpensesController {
     @Query('cardId') cardId?: string,
     @Query('status') status?: PaymentStatus,
     @Query('search') search?: string,
+    @Query('dateType') dateType?: 'dueDate' | 'transactionDate',
   ) {
     const parsedMonth = month ? parseInt(month, 10) : undefined;
     const parsedYear = year ? parseInt(year, 10) : undefined;
@@ -51,6 +52,7 @@ export class ExpensesController {
       cardId,
       status,
       search,
+      dateType,
     });
 
     return {

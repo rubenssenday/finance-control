@@ -32,6 +32,7 @@ export interface ExpenseFilters {
   cardId?: string;
   status?: PaymentStatus;
   search?: string;
+  dateType?: 'dueDate' | 'transactionDate';
 }
 
 @Injectable()
@@ -44,6 +45,8 @@ export class ExpensesService {
 
   /**
    * Lists expenses for the active account with optional month/year and criteria filtering.
+   * By default, filters by `dueDate` (cash outflow commitment / statement due date) to ensure
+   * credit card installments and recurrences only appear in their respective billing cycles.
    */
   async list(accountId: string, filters: ExpenseFilters = {}): Promise<Expense[]> {
     const where: Prisma.ExpenseWhereInput = { accountId };
@@ -68,22 +71,19 @@ export class ExpensesService {
       };
     }
 
+    const dateField =
+      filters.dateType === 'transactionDate' ? 'transactionDate' : 'dueDate';
+
     if (filters.year && filters.month) {
       const start = new Date(Date.UTC(filters.year, filters.month - 1, 1, 0, 0, 0));
       const end = new Date(Date.UTC(filters.year, filters.month, 0, 23, 59, 59, 999));
 
-      where.OR = [
-        { transactionDate: { gte: start, lte: end } },
-        { dueDate: { gte: start, lte: end } },
-      ];
+      where[dateField] = { gte: start, lte: end };
     } else if (filters.year) {
       const start = new Date(Date.UTC(filters.year, 0, 1, 0, 0, 0));
       const end = new Date(Date.UTC(filters.year, 11, 31, 23, 59, 59, 999));
 
-      where.OR = [
-        { transactionDate: { gte: start, lte: end } },
-        { dueDate: { gte: start, lte: end } },
-      ];
+      where[dateField] = { gte: start, lte: end };
     }
 
     return this.prisma.expense.findMany({
