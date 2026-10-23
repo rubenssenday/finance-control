@@ -142,12 +142,13 @@ export default function IncomesPage() {
     let pendingCount = 0;
 
     incomes.forEach((item) => {
-      total += item.amount;
+      const val = Number(item.amount) || 0;
+      total += val;
       if (item.status === 'RECEIVED') {
-        received += item.amount;
+        received += val;
         receivedCount++;
       } else {
-        pending += item.amount;
+        pending += val;
         pendingCount++;
       }
     });
@@ -162,11 +163,12 @@ export default function IncomesPage() {
     };
   }, [incomes]);
 
-  const formatCurrency = (val: number) => {
+  const formatCurrency = (val: number | string) => {
+    const num = typeof val === 'number' ? val : Number(val) || 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(val);
+    }).format(num);
   };
 
   const formatDate = (dateStr: string) => {

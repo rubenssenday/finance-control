@@ -73,20 +73,21 @@ export default function CardsPage() {
   );
 
   const totalLimit = useMemo(
-    () => activeCards.reduce((acc, c) => acc + c.creditLimit, 0),
+    () => activeCards.reduce((acc, c) => acc + (Number(c.creditLimit) || 0), 0),
     [activeCards],
   );
   const totalAvailable = useMemo(
-    () => activeCards.reduce((acc, c) => acc + c.availableLimit, 0),
+    () => activeCards.reduce((acc, c) => acc + (Number(c.availableLimit) || 0), 0),
     [activeCards],
   );
   const totalCommitted = Math.max(0, totalLimit - totalAvailable);
 
-  const formatCurrency = (val: number) => {
+  const formatCurrency = (val: number | string) => {
+    const num = typeof val === 'number' ? val : Number(val) || 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(val);
+    }).format(num);
   };
 
   const displayedCards = activeTab === 'ACTIVE' ? activeCards : archivedCards;

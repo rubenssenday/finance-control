@@ -33,7 +33,7 @@ export class IncomesService {
    * Lists incomes for the active account with optional month/year and search criteria.
    * Filters strictly by `receiptDate` (deposit date) to represent monthly cash inflow.
    */
-  async list(accountId: string, filters: IncomeFilters = {}): Promise<Income[]> {
+  async list(accountId: string, filters: IncomeFilters = {}): Promise<any[]> {
     const where: Prisma.IncomeWhereInput = { accountId };
 
     if (filters.status) {
@@ -72,7 +72,7 @@ export class IncomesService {
       where.receiptDate = { gte: start, lte: end };
     }
 
-    return this.prisma.income.findMany({
+    const incomes = await this.prisma.income.findMany({
       where,
       include: {
         category: {
@@ -81,6 +81,11 @@ export class IncomesService {
       },
       orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
     });
+
+    return incomes.map((inc) => ({
+      ...inc,
+      amount: Number(inc.amount),
+    }));
   }
 
   /**
@@ -101,7 +106,10 @@ export class IncomesService {
       });
     }
 
-    return income;
+    return {
+      ...income,
+      amount: Number(income.amount),
+    } as any;
   }
 
   /**
@@ -192,7 +200,7 @@ export class IncomesService {
     accountId: string,
     id: string,
     dto: UpdateIncomeDto,
-  ): Promise<Income> {
+  ): Promise<any> {
     const income = await this.findById(accountId, id);
 
     const dataToUpdate: Prisma.IncomeUpdateInput = {};
@@ -241,13 +249,18 @@ export class IncomesService {
       dataToUpdate.notes = dto.notes ? dto.notes.trim() : null;
     }
 
-    return this.prisma.income.update({
+    const updated = await this.prisma.income.update({
       where: { id: income.id },
       data: dataToUpdate,
       include: {
         category: true,
       },
     });
+
+    return {
+      ...updated,
+      amount: Number(updated.amount),
+    };
   }
 
   /**

@@ -157,12 +157,13 @@ export default function ExpensesPage() {
     let pendingCount = 0;
 
     expenses.forEach((item) => {
-      total += item.amount;
+      const val = Number(item.amount) || 0;
+      total += val;
       if (item.paymentStatus === 'PAID') {
-        paid += item.amount;
+        paid += val;
         paidCount++;
       } else {
-        pending += item.amount;
+        pending += val;
         pendingCount++;
       }
     });
@@ -177,11 +178,12 @@ export default function ExpensesPage() {
     };
   }, [expenses]);
 
-  const formatCurrency = (val: number) => {
+  const formatCurrency = (val: number | string) => {
+    const num = typeof val === 'number' ? val : Number(val) || 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(val);
+    }).format(num);
   };
 
   const formatDate = (dateStr: string) => {

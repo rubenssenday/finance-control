@@ -110,6 +110,7 @@ export class ExpensesService {
       );
       return {
         ...exp,
+        amount: Number(exp.amount),
         displayStatus,
         daysOverdue,
       };
@@ -143,6 +144,7 @@ export class ExpensesService {
 
     return {
       ...expense,
+      amount: Number(expense.amount),
       displayStatus,
       daysOverdue,
     };
@@ -328,7 +330,7 @@ export class ExpensesService {
     accountId: string,
     id: string,
     dto: UpdateExpenseDto,
-  ): Promise<Expense> {
+  ): Promise<any> {
     const expense = await this.findById(accountId, id);
 
     const dataToUpdate: Prisma.ExpenseUpdateInput = {};
@@ -381,7 +383,7 @@ export class ExpensesService {
       });
     }
 
-    return this.prisma.expense.update({
+    const updated = await this.prisma.expense.update({
       where: { id },
       data: dataToUpdate,
       include: {
@@ -389,6 +391,11 @@ export class ExpensesService {
         card: true,
       },
     });
+
+    return {
+      ...updated,
+      amount: Number(updated.amount),
+    };
   }
 
   /**
@@ -485,6 +492,7 @@ export class ExpensesService {
 
     return {
       ...updated,
+      amount: Number(updated.amount),
       displayStatus,
       daysOverdue,
     };
