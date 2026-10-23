@@ -2,15 +2,19 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoicesService } from '../cards/invoices.service';
 import { RecurrenceService } from './recurrence.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { SettleExpenseDto } from './dto/settle-expense.dto';
 import { CsvConfirmRowDto } from './dto/csv-import.dto';
 import { calculateInstallments } from './utils/installment-math.util';
 import { resolveCycleForTransaction } from '../cards/utils/billing-cycle.util';
+import { calculateExpenseDisplayStatus } from './utils/expense-status.util';
 import {
   parseCsvText,
   validateCsvRows,
@@ -48,7 +52,7 @@ export class ExpensesService {
    * By default, filters by `dueDate` (cash outflow commitment / statement due date) to ensure
    * credit card installments and recurrences only appear in their respective billing cycles.
    */
-  async list(accountId: string, filters: ExpenseFilters = {}): Promise<Expense[]> {
+  async list(accountId: string, filters: ExpenseFilters = {}): Promise<any[]> {
     const where: Prisma.ExpenseWhereInput = { accountId };
 
     if (filters.method) {
@@ -86,7 +90,7 @@ export class ExpensesService {
       where[dateField] = { gte: start, lte: end };
     }
 
-    return this.prisma.expense.findMany({
+    const expenses = await this.prisma.expense.findMany({
       where,
       include: {
         category: {
@@ -98,12 +102,24 @@ export class ExpensesService {
       },
       orderBy: [{ dueDate: 'asc' }, { transactionDate: 'asc' }],
     });
+
+    return expenses.map((exp) => {
+      const { displayStatus, daysOverdue } = calculateExpenseDisplayStatus(
+        exp.paymentStatus,
+        exp.dueDate,
+      );
+      return {
+        ...exp,
+        displayStatus,
+        daysOverdue,
+      };
+    });
   }
 
   /**
    * Retrieves a single expense by ID.
    */
-  async findById(accountId: string, id: string): Promise<Expense> {
+  async findById(accountId: string, id: string): Promise<any> {
     const expense = await this.prisma.expense.findFirst({
       where: { id, accountId },
       include: {
@@ -120,7 +136,16 @@ export class ExpensesService {
       });
     }
 
-    return expense;
+    const { displayStatus, daysOverdue } = calculateExpenseDisplayStatus(
+      expense.paymentStatus,
+      expense.dueDate,
+    );
+
+    return {
+      ...expense,
+      displayStatus,
+      daysOverdue,
+    };
   }
 
   /**
@@ -364,6 +389,105 @@ export class ExpensesService {
         card: true,
       },
     });
+  }
+
+  /**
+   * Settles or toggles the settlement status of an individual cash expense.
+   * Direct settlement of credit card expenses is prohibited (must be settled via invoice).
+   */
+  async settleExpense(
+    accountId: string,
+    id: string,
+    dto: SettleExpenseDto,
+  ): Promise<any> {
+    const expense = await this.prisma.expense.findFirst({
+      where: { id, accountId },
+      include: {
+        category: true,
+        card: true,
+        invoice: true,
+      },
+    });
+
+    if (!expense) {
+      throw new NotFoundException({
+        code: 'EXP_NOT_FOUND',
+        message: 'Expense not found in this account.',
+      });
+    }
+
+    if (expense.paymentMethod === PaymentMethod.CREDIT_CARD) {
+      throw new UnprocessableEntityException({
+        code: 'SETTLE_CREDIT_CARD_FORBIDDEN',
+        message:
+          'Individual credit card expenses must be settled via the credit card invoice.',
+      });
+    }
+
+    // Optimistic concurrency check
+    if (dto.expectedUpdatedAt) {
+      const expectedTime = new Date(dto.expectedUpdatedAt).getTime();
+      const actualTime = new Date(expense.updatedAt).getTime();
+      if (Math.abs(expectedTime - actualTime) > 1000) {
+        const { displayStatus, daysOverdue } = calculateExpenseDisplayStatus(
+          expense.paymentStatus,
+          expense.dueDate,
+        );
+        throw new ConflictException({
+          code: 'CONCURRENT_STATUS_MUTATION',
+          message:
+            'Transaction status was updated in another session. Refreshed latest data.',
+          currentData: {
+            ...expense,
+            displayStatus,
+            daysOverdue,
+          },
+        });
+      }
+    }
+
+    // Determine target status
+    let targetStatus: PaymentStatus;
+    if (dto.status) {
+      targetStatus = dto.status;
+    } else {
+      targetStatus =
+        expense.paymentStatus === PaymentStatus.PAID
+          ? PaymentStatus.PENDING
+          : PaymentStatus.PAID;
+    }
+
+    let paidAt: Date | null = null;
+    if (targetStatus === PaymentStatus.PAID) {
+      paidAt = dto.settlementDate ? new Date(dto.settlementDate) : new Date();
+    }
+
+    const updated = await this.prisma.expense.update({
+      where: { id },
+      data: {
+        paymentStatus: targetStatus,
+        paidAt,
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
+        card: {
+          select: { id: true, nickname: true, brand: true },
+        },
+      },
+    });
+
+    const { displayStatus, daysOverdue } = calculateExpenseDisplayStatus(
+      updated.paymentStatus,
+      updated.dueDate,
+    );
+
+    return {
+      ...updated,
+      displayStatus,
+      daysOverdue,
+    };
   }
 
   /**

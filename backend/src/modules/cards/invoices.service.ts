@@ -1,10 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Invoice, InvoiceStatus, Prisma } from '@prisma/client';
+import { Invoice, InvoiceStatus, PaymentStatus, Prisma } from '@prisma/client';
 import {
   calculateCycleDates,
   resolveCycleForTransaction,
 } from './utils/billing-cycle.util';
+import { PayInvoiceDto } from './dto/pay-invoice.dto';
+import { ReopenInvoiceDto } from './dto/reopen-invoice.dto';
 
 export interface SerializedInvoice {
   id: string;
@@ -233,5 +240,157 @@ export class InvoicesService {
     });
 
     return invoice ? this.serializeInvoice(invoice) : null;
+  }
+
+  /**
+   * Atomically marks a credit card invoice as PAID and cascades PAID status
+   * to all underlying expense installments attached to that invoice.
+   */
+  async payInvoice(
+    accountId: string,
+    invoiceId: string,
+    dto: PayInvoiceDto = {},
+  ): Promise<{ invoice: SerializedInvoice; settledExpensesCount: number }> {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id: invoiceId, accountId },
+      include: { card: true },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException({
+        code: 'INVOICE_NOT_FOUND',
+        message: 'Invoice not found in this account.',
+      });
+    }
+
+    if (invoice.status === InvoiceStatus.PAID) {
+      throw new BadRequestException({
+        code: 'INVOICE_ALREADY_PAID',
+        message: 'Invoice is already marked as PAID.',
+      });
+    }
+
+    // Optimistic concurrency check
+    if (dto.expectedUpdatedAt) {
+      const expectedTime = new Date(dto.expectedUpdatedAt).getTime();
+      const actualTime = new Date(invoice.updatedAt).getTime();
+      if (Math.abs(expectedTime - actualTime) > 1000) {
+        throw new ConflictException({
+          code: 'CONCURRENT_STATUS_MUTATION',
+          message:
+            'Invoice status was updated in another session. Refreshed latest data.',
+          currentData: this.serializeInvoice(invoice),
+        });
+      }
+    }
+
+    const paymentDate = dto.paymentDate ? new Date(dto.paymentDate) : new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedInvoice = await tx.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          status: InvoiceStatus.PAID,
+          paidAt: paymentDate,
+        },
+      });
+
+      const expenseUpdateResult = await tx.expense.updateMany({
+        where: {
+          invoiceId: invoice.id,
+          accountId,
+        },
+        data: {
+          paymentStatus: PaymentStatus.PAID,
+          paidAt: paymentDate,
+        },
+      });
+
+      return {
+        invoice: this.serializeInvoice(updatedInvoice),
+        settledExpensesCount: expenseUpdateResult.count,
+      };
+    });
+  }
+
+  /**
+   * Atomically reopens a paid credit card invoice and reverts all underlying
+   * expense installments back to PENDING status.
+   */
+  async reopenInvoice(
+    accountId: string,
+    invoiceId: string,
+    dto: ReopenInvoiceDto,
+  ): Promise<{ invoice: SerializedInvoice; revertedExpensesCount: number }> {
+    if (!dto.confirmReopen) {
+      throw new BadRequestException({
+        code: 'CONFIRMATION_REQUIRED',
+        message: 'User confirmation is required to reopen an invoice.',
+      });
+    }
+
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id: invoiceId, accountId },
+      include: { card: true },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException({
+        code: 'INVOICE_NOT_FOUND',
+        message: 'Invoice not found in this account.',
+      });
+    }
+
+    if (invoice.status !== InvoiceStatus.PAID) {
+      throw new BadRequestException({
+        code: 'INVOICE_NOT_PAID',
+        message: 'Invoice is not currently in PAID status.',
+      });
+    }
+
+    // Optimistic concurrency check
+    if (dto.expectedUpdatedAt) {
+      const expectedTime = new Date(dto.expectedUpdatedAt).getTime();
+      const actualTime = new Date(invoice.updatedAt).getTime();
+      if (Math.abs(expectedTime - actualTime) > 1000) {
+        throw new ConflictException({
+          code: 'CONCURRENT_STATUS_MUTATION',
+          message:
+            'Invoice status was updated in another session. Refreshed latest data.',
+          currentData: this.serializeInvoice(invoice),
+        });
+      }
+    }
+
+    // Determine target status based on current date vs closing date
+    const now = new Date();
+    const targetStatus =
+      now > invoice.closingDate ? InvoiceStatus.CLOSED : InvoiceStatus.OPEN;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedInvoice = await tx.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          status: targetStatus,
+          paidAt: null,
+        },
+      });
+
+      const expenseUpdateResult = await tx.expense.updateMany({
+        where: {
+          invoiceId: invoice.id,
+          accountId,
+        },
+        data: {
+          paymentStatus: PaymentStatus.PENDING,
+          paidAt: null,
+        },
+      });
+
+      return {
+        invoice: this.serializeInvoice(updatedInvoice),
+        revertedExpensesCount: expenseUpdateResult.count,
+      };
+    });
   }
 }

@@ -328,6 +328,7 @@ export default function CardsPage() {
               onEdit={handleOpenEditModal}
               onDelete={handleDeletePrompt}
               onToggleArchive={handleToggleArchive}
+              onInvoiceSettled={fetchCards}
             />
           ))}
         </div>

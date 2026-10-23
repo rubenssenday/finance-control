@@ -53,6 +53,10 @@ export interface ExpenseData {
   installmentTotal?: number | null;
   isRecurring: boolean;
   notes?: string | null;
+  paidAt?: string | null;
+  displayStatus?: 'PAID' | 'PENDING' | 'OVERDUE';
+  daysOverdue?: number;
+  updatedAt?: string;
   category?: {
     id: string;
     name: string;

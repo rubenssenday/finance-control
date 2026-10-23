@@ -16,6 +16,8 @@ import { CardsService } from './cards.service';
 import { InvoicesService } from './invoices.service';
 import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
+import { PayInvoiceDto } from './dto/pay-invoice.dto';
+import { ReopenInvoiceDto } from './dto/reopen-invoice.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AccountContextGuard } from '../../common/guards/account-context.guard';
 import { CurrentAccount } from '../../common/decorators/current-account.decorator';
@@ -106,6 +108,34 @@ export class CardsController {
     return {
       status: 'success',
       data: invoices,
+    };
+  }
+
+  @Post('invoices/:id/pay')
+  async payInvoice(
+    @CurrentAccount('id') accountId: string,
+    @Param('id') id: string,
+    @Body() dto: PayInvoiceDto,
+  ) {
+    const result = await this.invoicesService.payInvoice(accountId, id, dto);
+    return {
+      status: 'success',
+      data: result.invoice,
+      settledExpensesCount: result.settledExpensesCount,
+    };
+  }
+
+  @Post('invoices/:id/reopen')
+  async reopenInvoice(
+    @CurrentAccount('id') accountId: string,
+    @Param('id') id: string,
+    @Body() dto: ReopenInvoiceDto,
+  ) {
+    const result = await this.invoicesService.reopenInvoice(accountId, id, dto);
+    return {
+      status: 'success',
+      data: result.invoice,
+      revertedExpensesCount: result.revertedExpensesCount,
     };
   }
 }

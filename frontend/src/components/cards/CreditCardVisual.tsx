@@ -41,6 +41,7 @@ interface CreditCardVisualProps {
   onEdit: (card: CardData) => void;
   onDelete: (card: CardData) => void;
   onToggleArchive: (card: CardData) => void;
+  onInvoiceSettled?: () => void;
 }
 
 export function CreditCardVisual({
@@ -48,6 +49,7 @@ export function CreditCardVisual({
   onEdit,
   onDelete,
   onToggleArchive,
+  onInvoiceSettled,
 }: CreditCardVisualProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
@@ -68,23 +70,30 @@ export function CreditCardVisual({
     Math.round((limitUsed / (card.creditLimit || 1)) * 100),
   );
 
+  const fetchInvoices = async () => {
+    try {
+      setIsLoadingInvoices(true);
+      const res = await apiClient<{
+        status: string;
+        data: InvoiceData[];
+      }>(`/cards/${card.id}/invoices`);
+      setInvoices(res.data || []);
+      if (onInvoiceSettled) {
+        onInvoiceSettled();
+      }
+    } catch (err) {
+      console.error('Failed to load card invoices:', err);
+    } finally {
+      setIsLoadingInvoices(false);
+    }
+  };
+
   const handleToggleExpand = async () => {
     const nextState = !isExpanded;
     setIsExpanded(nextState);
 
     if (nextState && invoices.length === 0) {
-      try {
-        setIsLoadingInvoices(true);
-        const res = await apiClient<{
-          status: string;
-          data: InvoiceData[];
-        }>(`/cards/${card.id}/invoices`);
-        setInvoices(res.data || []);
-      } catch (err) {
-        console.error('Failed to load card invoices:', err);
-      } finally {
-        setIsLoadingInvoices(false);
-      }
+      await fetchInvoices();
     }
   };
 
@@ -238,7 +247,13 @@ export function CreditCardVisual({
       {/* Expanded Invoices Container */}
       {isExpanded && (
         <div className="border-t border-slate-100 bg-slate-50/30 animate-fadeIn">
-          <InvoiceList invoices={invoices} isLoading={isLoadingInvoices} />
+          <InvoiceList
+            invoices={invoices}
+            isLoading={isLoadingInvoices}
+            cardNickname={card.nickname}
+            cardBrand={card.brand}
+            onInvoiceSettled={fetchInvoices}
+          />
         </div>
       )}
     </div>

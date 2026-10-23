@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { SettleExpenseDto } from './dto/settle-expense.dto';
 import { ConfirmCsvImportDto } from './dto/csv-import.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AccountContextGuard } from '../../common/guards/account-context.guard';
@@ -93,6 +94,19 @@ export class ExpensesController {
     @Body() dto: UpdateExpenseDto,
   ) {
     const expense = await this.expensesService.update(accountId, id, dto);
+    return {
+      status: 'success',
+      data: expense,
+    };
+  }
+
+  @Patch(':id/settle')
+  async settle(
+    @CurrentAccount('id') accountId: string,
+    @Param('id') id: string,
+    @Body() dto: SettleExpenseDto,
+  ) {
+    const expense = await this.expensesService.settleExpense(accountId, id, dto);
     return {
       status: 'success',
       data: expense,

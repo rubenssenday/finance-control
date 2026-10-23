@@ -11,6 +11,7 @@ import {
 } from '@/components/expenses/ExpenseModal';
 import { CsvImportModal } from '@/components/expenses/CsvImportModal';
 import { CategoryIcon } from '@/components/categories/CategoryIcon';
+import { CashExpenseStatusToggle } from '@/components/settlement/CashExpenseStatusToggle';
 import {
   Receipt,
   Plus,
@@ -195,29 +196,11 @@ export default function ExpensesPage() {
     }
   };
 
-  // Quick Toggle Status handler
-  const handleToggleStatus = async (expense: ExpenseData) => {
-    const nextStatus: PaymentStatusType =
-      expense.paymentStatus === 'PAID' ? 'PENDING' : 'PAID';
-
-    try {
-      setUpdatingStatusId(expense.id);
-      await apiClient(`/expenses/${expense.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ paymentStatus: nextStatus }),
-      });
-
-      // Update state locally
-      setExpenses((prev) =>
-        prev.map((e) =>
-          e.id === expense.id ? { ...e, paymentStatus: nextStatus } : e,
-        ),
-      );
-    } catch (err: any) {
-      setError(err.message || 'Erro ao alterar status da despesa.');
-    } finally {
-      setUpdatingStatusId(null);
-    }
+  // Status Change handler from CashExpenseStatusToggle
+  const handleExpenseStatusChange = (updated: any) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e)),
+    );
   };
 
   // Open Delete Confirmation
@@ -634,27 +617,14 @@ export default function ExpensesPage() {
 
                       {/* Status Toggle Badge */}
                       <td className="py-4 px-3 whitespace-nowrap">
-                        <button
-                          onClick={() => handleToggleStatus(expense)}
-                          disabled={isUpdatingThis}
-                          title="Clique para alternar o status do pagamento"
-                          className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                            expense.paymentStatus === 'PAID'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
-                          }`}
-                        >
-                          {isUpdatingThis ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : expense.paymentStatus === 'PAID' ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          )}
-                          <span>
-                            {expense.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
-                          </span>
-                        </button>
+                        <CashExpenseStatusToggle
+                          expense={expense as any}
+                          onStatusChange={handleExpenseStatusChange}
+                          onError={(msg) => {
+                            setError(msg);
+                            setTimeout(() => setError(null), 5000);
+                          }}
+                        />
                       </td>
 
                       {/* Amount */}
