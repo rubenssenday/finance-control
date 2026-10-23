@@ -10,6 +10,7 @@ import {
   CreditCard,
   Tags,
   Receipt,
+  TrendingUp,
   Sparkles,
   ArrowUpRight,
 } from 'lucide-react';
@@ -112,7 +113,7 @@ export default function DashboardPage() {
           Explore the active core modules of your financial workspace:
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
           <Link
             href="/settings/categories"
             className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
@@ -159,7 +160,24 @@ export default function DashboardPage() {
                 F04. Expense Engine
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Cash transactions, banking installment math & monthly recurrence
+                Cash transactions, banking installment math & recurrence
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/incomes"
+            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-teal-300 hover:shadow-md transition-all flex items-start space-x-3 group"
+          >
+            <div className="p-2 rounded-xl bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors shrink-0">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 group-hover:text-teal-600 transition-colors">
+                F05. Incomes
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Salary, freelance receipts & 12-month recurring cash intake
               </p>
             </div>
           </Link>

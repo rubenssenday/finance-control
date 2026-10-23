@@ -53,6 +53,11 @@ enum RecurrenceFrequency {
   MONTHLY
 }
 
+enum IncomeStatus {
+  RECEIVED
+  PENDING
+}
+
 model User {
   id           String              @id @default(uuid()) @db.Uuid
   email        String              @unique @db.VarChar(255)
@@ -80,8 +85,10 @@ model Account {
   categories      Category[]
   creditCards     CreditCard[]
   invoices        Invoice[]
-  expenses        Expense[]
-  recurrenceRules RecurrenceRule[]
+  expenses              Expense[]
+  recurrenceRules       RecurrenceRule[]
+  incomes               Income[]
+  incomeRecurrenceRules IncomeRecurrenceRule[]
 
   @@map("accounts")
 }
@@ -98,8 +105,10 @@ model Category {
   updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
 
   account         Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  expenses        Expense[]
-  recurrenceRules RecurrenceRule[]
+  expenses              Expense[]
+  recurrenceRules       RecurrenceRule[]
+  incomes               Income[]
+  incomeRecurrenceRules IncomeRecurrenceRule[]
 
   @@unique([accountId, name], name: "uq_categories_account_name")
   @@index([accountId, type], name: "ix_categories_account_type")
@@ -256,4 +265,50 @@ model Expense {
   @@index([installmentGroupId], name: "ix_expenses_installment_group")
   @@index([recurrenceRuleId], name: "ix_expenses_recurrence_rule")
   @@map("expenses")
+}
+
+model IncomeRecurrenceRule {
+  id          String    @id @default(uuid()) @db.Uuid
+  accountId   String    @map("account_id") @db.Uuid
+  description String    @db.VarChar(100)
+  amount      Decimal   @db.Decimal(12, 2)
+  dayOfMonth  Int       @map("day_of_month")
+  startDate   DateTime  @map("start_date") @db.Timestamptz()
+  endDate     DateTime? @map("end_date") @db.Timestamptz()
+  categoryId  String    @map("category_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  account  Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  incomes  Income[]
+
+  @@index([accountId], name: "ix_income_recurrence_rules_account")
+  @@map("income_recurrence_rules")
+}
+
+model Income {
+  id                     String                @id @default(uuid()) @db.Uuid
+  accountId              String                @map("account_id") @db.Uuid
+  description            String                @db.VarChar(100)
+  amount                 Decimal               @db.Decimal(12, 2)
+  receiptDate            DateTime              @map("receipt_date") @db.Timestamptz()
+  status                 IncomeStatus          @default(PENDING)
+  categoryId             String                @map("category_id") @db.Uuid
+  isRecurring            Boolean               @default(false) @map("is_recurring")
+  incomeRecurrenceRuleId String?               @map("income_recurrence_rule_id") @db.Uuid
+  notes                  String?               @db.Text
+  createdAt              DateTime              @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt              DateTime              @updatedAt @map("updated_at") @db.Timestamptz()
+
+  account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category             Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  incomeRecurrenceRule IncomeRecurrenceRule? @relation(fields: [incomeRecurrenceRuleId], references: [id], onDelete: SetNull)
+
+  @@index([accountId], name: "ix_incomes_account_id")
+  @@index([accountId, receiptDate], name: "ix_incomes_account_receipt_date")
+  @@index([categoryId], name: "ix_incomes_category_id")
+  @@index([accountId, status], name: "ix_incomes_status")
+  @@index([incomeRecurrenceRuleId], name: "ix_incomes_recurrence_rule_id")
+  @@map("incomes")
 }
