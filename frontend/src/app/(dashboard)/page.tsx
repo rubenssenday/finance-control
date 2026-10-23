@@ -107,35 +107,62 @@ export default function DashboardPage() {
 
       {/* Upcoming Domain Modules Placeholder */}
       <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs">
-        <h2 className="text-xl font-bold text-slate-900">Ready for Financial Modules</h2>
+        <h2 className="text-xl font-bold text-slate-900">Financial Modules</h2>
         <p className="text-sm text-slate-500 mt-1">
-          The foundation (F01) is complete. The system is ready to receive domain entities:
+          Explore the active core modules of your financial workspace:
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-          <div className="p-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-start space-x-3">
-            <Tags className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-slate-800">F02. Categories</p>
-              <p className="text-xs text-slate-500 mt-0.5">Custom category tags with icons and colors</p>
+          <Link
+            href="/settings/categories"
+            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
+          >
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
+              <Tags className="w-5 h-5" />
             </div>
-          </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                F02. Categories
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Expense classification with custom icons and color tags
+              </p>
+            </div>
+          </Link>
 
-          <div className="p-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-start space-x-3">
-            <CreditCard className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-slate-800">F03. Credit Cards</p>
-              <p className="text-xs text-slate-500 mt-0.5">Card brands, limits, closing and due dates</p>
+          <Link
+            href="/cards"
+            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
+          >
+            <div className="p-2 rounded-xl bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors shrink-0">
+              <CreditCard className="w-5 h-5" />
             </div>
-          </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 group-hover:text-violet-600 transition-colors">
+                F03. Credit Cards
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Card brands, limits, statement invoices & billing cycles
+              </p>
+            </div>
+          </Link>
 
-          <div className="p-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-start space-x-3">
-            <Receipt className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-slate-800">F04. Expense Engine</p>
-              <p className="text-xs text-slate-500 mt-0.5">Installments and non-repeating decimal rounding</p>
+          <Link
+            href="/expenses"
+            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
+          >
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
+              <Receipt className="w-5 h-5" />
             </div>
-          </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
+                F04. Expense Engine
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Cash transactions, banking installment math & monthly recurrence
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

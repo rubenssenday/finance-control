@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { AccountSwitcher } from './AccountSwitcher';
-import { WalletCards, LogOut, Users, Settings, Tags, CreditCard } from 'lucide-react';
+import { WalletCards, LogOut, Users, Settings, Tags, CreditCard, Receipt } from 'lucide-react';
 
 export function AppHeader() {
   const { user, activeAccount, logout } = useAuth();
@@ -33,6 +33,14 @@ export function AppHeader() {
         <div className="flex items-center space-x-3">
           {activeAccount && (
             <>
+              <Link
+                href="/expenses"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
+                <Receipt className="w-4 h-4 text-slate-400" />
+                <span className="hidden md:inline">Expenses</span>
+              </Link>
+
               <Link
                 href="/cards"
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
