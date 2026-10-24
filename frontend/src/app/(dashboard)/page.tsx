@@ -1,205 +1,373 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { apiClient } from '@/lib/api-client';
+import { MonthlyDashboardData } from '@/components/dashboard/dashboard-types';
+import { MonthSelector } from '@/components/dashboard/MonthSelector';
+import { FinancialSummaryBar } from '@/components/dashboard/FinancialSummaryBar';
+import { CreditCardBrandGroup } from '@/components/dashboard/CreditCardBrandGroup';
+import { DirectExpensesGroup } from '@/components/dashboard/DirectExpensesGroup';
+import { CategoryDonutChart } from '@/components/dashboard/CategoryDonutChart';
+import { MonthlyExportModal } from '@/components/dashboard/MonthlyExportModal';
 import {
-  WalletCards,
-  Users,
-  Shield,
-  CreditCard,
-  Tags,
-  Receipt,
-  TrendingUp,
+  InvoicePaymentModal,
+  InvoiceModalData,
+} from '@/components/settlement/InvoicePaymentModal';
+import { InvoiceReopenModal } from '@/components/settlement/InvoiceReopenModal';
+import { formatCurrencyBRL, formatDateBRL } from '@/lib/export-utils';
+import {
+  LayoutDashboard,
+  Download,
+  AlertCircle,
   CheckCircle2,
+  X,
+  CreditCard,
+  Wallet,
+  TrendingUp,
+  Receipt,
   Sparkles,
-  ArrowUpRight,
+  ArrowRight,
+  Shield,
+  Layers,
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, activeAccount } = useAuth();
 
+  // Current Month/Year Navigation State
+  const currentDate = new Date();
+  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1); // 1-12
+
+  // Analytics Data State
+  const [dashboardData, setDashboardData] = useState<MonthlyDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Modal States
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [selectedPayInvoice, setSelectedPayInvoice] = useState<InvoiceModalData | null>(null);
+  const [selectedReopenInvoice, setSelectedReopenInvoice] = useState<InvoiceModalData | null>(null);
+
+  // Fetch Consolidated Monthly Analytics
+  const fetchMonthlyDashboard = useCallback(async () => {
+    if (!activeAccount) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const res = await apiClient<{
+        status: string;
+        data: MonthlyDashboardData;
+      }>(`/dashboard/monthly?year=${selectedYear}&month=${selectedMonth}`);
+
+      setDashboardData(res.data);
+    } catch (err: any) {
+      setError(err.message || 'Falha ao carregar dados do painel financeiro.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeAccount, selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    fetchMonthlyDashboard();
+  }, [fetchMonthlyDashboard]);
+
+  // Handle Month Change from Timeline Selector
+  const handleMonthChange = (year: number, month: number) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
+  };
+
+  // Direct Expense status change handler (from CashExpenseStatusToggle)
+  const handleDirectExpenseStatusChange = () => {
+    // Refresh analytics to update summary bar & direct block metrics
+    fetchMonthlyDashboard();
+  };
+
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Top Banner: Active Workspace Overview */}
-      <div className="rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-800 p-8 text-white shadow-xl shadow-indigo-600/15 relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold tracking-wide uppercase mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Active Financial Workspace</span>
+    <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Top Banner: Workspace Overview & Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs print:hidden">
+        <div>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold tracking-wide uppercase mb-2">
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Painel Financeiro Consolidado</span>
           </div>
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            {activeAccount ? activeAccount.name : 'Loading Workspace...'}
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            {activeAccount ? activeAccount.name : 'Painel Financeiro'}
           </h1>
-
-          <p className="mt-2 text-indigo-100 text-base sm:text-lg">
-            Welcome, <span className="font-semibold text-white">{user?.displayName}</span>! You are viewing this workspace as{' '}
-            <span className="font-semibold text-amber-300">
-              {activeAccount?.role === 'ADMINISTRATOR' ? 'Administrator' : 'Member'}
-            </span>
-            .
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Visão consolidada de receitas, faturas de cartão de crédito e despesas à vista.
           </p>
+        </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link
-              href="/settings/members"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white text-indigo-900 font-semibold text-sm hover:bg-indigo-50 transition-colors shadow-sm"
-            >
-              <Users className="w-4 h-4 text-indigo-600" />
-              <span>Manage Workspace Members</span>
-            </Link>
-          </div>
+        {/* Action Buttons: Export Statement */}
+        <div className="flex items-center space-x-3 shrink-0">
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            disabled={!dashboardData}
+            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-xs disabled:opacity-50"
+          >
+            <Download className="w-4 h-4 text-slate-500" />
+            <span>Exportar Extrato</span>
+          </button>
         </div>
       </div>
 
-      {/* Workspace Foundation Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1: Multi-Provider Authentication */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
-            <Shield className="w-5 h-5" />
+      {/* Timeline Month Navigation Selector */}
+      <div className="print:hidden">
+        <MonthSelector
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onChange={handleMonthChange}
+        />
+      </div>
+
+      {/* Alert Notifications */}
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start space-x-3 text-rose-700 animate-fadeIn print:hidden">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm font-medium">{error}</div>
+          <button onClick={() => setError(null)} className="text-rose-500 hover:text-rose-800">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start space-x-3 text-emerald-700 animate-fadeIn print:hidden">
+          <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm font-medium">{success}</div>
+          <button onClick={() => setSuccess(null)} className="text-emerald-500 hover:text-emerald-800">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Top-Level Financial Summary Bar (5 Executive KPIs) */}
+      {dashboardData ? (
+        <FinancialSummaryBar summary={dashboardData.summary} isLoading={isLoading} />
+      ) : (
+        <FinancialSummaryBar
+          summary={{
+            totalIncome: 0,
+            totalExpenses: 0,
+            totalPaid: 0,
+            totalPending: 0,
+            netBalance: 0,
+            incomeCount: 0,
+            expenseCount: 0,
+          }}
+          isLoading={isLoading}
+        />
+      )}
+
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column (1 col): Category Donut Chart & Cash Flow Health Card */}
+        <div className="space-y-6">
+          {/* Category Donut Chart */}
+          <div className="min-h-[400px]">
+            <CategoryDonutChart
+              categories={dashboardData?.categoryBreakdown || []}
+              totalExpenses={dashboardData?.summary.totalExpenses || 0}
+              isLoading={isLoading}
+            />
           </div>
-          <h2 className="text-base font-bold text-slate-900">Multi-Provider Auth Active</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Protected with OWASP-recommended Argon2id password hashing and Google OAuth 2.0 integration.
-          </p>
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center text-xs font-semibold text-emerald-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
-            Session Status: Secure (HttpOnly JWT)
-          </div>
+
+          {/* Quick Financial Health Insight Card */}
+          {dashboardData && (
+            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-lg space-y-4 print:hidden">
+              <div className="flex items-center space-x-2 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>Saúde Financeira do Mês</span>
+              </div>
+
+              <div>
+                <p className="text-2xl font-black tracking-tight text-white">
+                  {dashboardData.summary.netBalance >= 0 ? 'Superávit em Dia' : 'Atenção aos Gastos'}
+                </p>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {dashboardData.summary.netBalance >= 0
+                    ? `Suas receitas superam as despesas em ${formatCurrencyBRL(
+                        dashboardData.summary.netBalance,
+                      )}. Você tem capacidade de poupança neste ciclo.`
+                    : `Suas despesas projetadas superam suas receitas em ${formatCurrencyBRL(
+                        Math.abs(dashboardData.summary.netBalance),
+                      )}. Reavalie obrigações ou antecipe entradas.`}
+                </p>
+              </div>
+
+              {/* Progress bar of Paid vs Total Expenses */}
+              <div className="pt-2 border-t border-white/10 space-y-2">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-slate-300">Progresso de Quitação</span>
+                  <span className="text-emerald-400 font-bold">
+                    {dashboardData.summary.totalExpenses > 0
+                      ? `${Math.round(
+                          (dashboardData.summary.totalPaid /
+                            dashboardData.summary.totalExpenses) *
+                            100,
+                        )}% pago`
+                      : '0% pago'}
+                  </span>
+                </div>
+                <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{
+                      width: `${
+                        dashboardData.summary.totalExpenses > 0
+                          ? Math.min(
+                              100,
+                              (dashboardData.summary.totalPaid /
+                                dashboardData.summary.totalExpenses) *
+                                100,
+                            )
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Quick links to register */}
+              <div className="pt-2 flex items-center justify-between text-xs">
+                <Link
+                  href="/expenses"
+                  className="inline-flex items-center space-x-1 text-indigo-300 hover:text-white transition-colors"
+                >
+                  <span>Ver todas despesas</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/incomes"
+                  className="inline-flex items-center space-x-1 text-emerald-300 hover:text-white transition-colors"
+                >
+                  <span>Ver receitas</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Card 2: Workspace Isolation */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all">
-          <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center mb-4">
-            <WalletCards className="w-5 h-5" />
-          </div>
-          <h2 className="text-base font-bold text-slate-900">Multi-Tenant Context</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Data is strictly isolated per account. You can seamlessly switch between workspaces in the top header.
-          </p>
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center text-xs font-semibold text-slate-500">
-            Role: {activeAccount?.role}
-          </div>
-        </div>
+        {/* Right Column (2 cols): Block 1 (Credit Cards by Brand) & Block 2 (Direct Expenses) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Block 1: Credit Cards Grouped by Brand */}
+          {dashboardData && (
+            <CreditCardBrandGroup
+              creditCards={dashboardData.creditCards}
+              onPayInvoice={(inv) => setSelectedPayInvoice(inv)}
+              onReopenInvoice={(inv) => setSelectedReopenInvoice(inv)}
+              isLoading={isLoading}
+            />
+          )}
 
-        {/* Card 3: Collaborative Sharing */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
-            <Users className="w-5 h-5" />
-          </div>
-          <h2 className="text-base font-bold text-slate-900">Collaborative Workspaces</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Invite family members or financial partners by email to co-manage expenses and track invoices.
-          </p>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <Link
-              href="/settings/members"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center"
-            >
-              <span>Invite collaborators</span>
-              <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
-            </Link>
-          </div>
+          {/* Block 2: Other Expenses (Boleto, Pix, Débito) */}
+          {dashboardData && (
+            <DirectExpensesGroup
+              directExpenses={dashboardData.directExpenses}
+              onStatusChange={handleDirectExpenseStatusChange}
+              onError={(msg) => {
+                setError(msg);
+                setTimeout(() => setError(null), 5000);
+              }}
+              isLoading={isLoading}
+            />
+          )}
         </div>
       </div>
 
-      {/* Upcoming Domain Modules Placeholder */}
-      <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs">
-        <h2 className="text-xl font-bold text-slate-900">Financial Modules</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Explore the active core modules of your financial workspace:
-        </p>
+      {/* --- Modals --- */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-6">
-          <Link
-            href="/settings/categories"
-            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
-          >
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
-              <Tags className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
-                F02. Categories
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Expense classification with custom icons and color tags
-              </p>
-            </div>
-          </Link>
+      {/* Export Statement Modal */}
+      {dashboardData && (
+        <MonthlyExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          data={dashboardData}
+        />
+      )}
 
-          <Link
-            href="/cards"
-            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
-          >
-            <div className="p-2 rounded-xl bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors shrink-0">
-              <CreditCard className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 group-hover:text-violet-600 transition-colors">
-                F03. Credit Cards
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Card brands, limits, statement invoices & billing cycles
-              </p>
-            </div>
-          </Link>
+      {/* Invoice Payment Modal (F06) */}
+      <InvoicePaymentModal
+        isOpen={Boolean(selectedPayInvoice)}
+        onClose={() => setSelectedPayInvoice(null)}
+        invoice={selectedPayInvoice}
+        onSuccess={() => {
+          setSelectedPayInvoice(null);
+          setSuccess('Fatura quitada com sucesso!');
+          setTimeout(() => setSuccess(null), 4000);
+          fetchMonthlyDashboard();
+        }}
+      />
 
-          <Link
-            href="/expenses"
-            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex items-start space-x-3 group"
-          >
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
-              <Receipt className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
-                F04. Expense Engine
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Cash transactions, banking installment math & recurrence
-              </p>
-            </div>
-          </Link>
+      {/* Invoice Reopen Modal (F06) */}
+      <InvoiceReopenModal
+        isOpen={Boolean(selectedReopenInvoice)}
+        onClose={() => setSelectedReopenInvoice(null)}
+        invoice={selectedReopenInvoice}
+        onSuccess={() => {
+          setSelectedReopenInvoice(null);
+          setSuccess('Fatura reaberta com sucesso.');
+          setTimeout(() => setSuccess(null), 4000);
+          fetchMonthlyDashboard();
+        }}
+      />
 
-          <Link
-            href="/incomes"
-            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-teal-300 hover:shadow-md transition-all flex items-start space-x-3 group"
-          >
-            <div className="p-2 rounded-xl bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors shrink-0">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 group-hover:text-teal-600 transition-colors">
-                F05. Incomes
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Salary, freelance receipts & 12-month recurring cash intake
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href="/cards"
-            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300 hover:shadow-md transition-all flex items-start space-x-3 group"
-          >
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
-                F06. Settlement
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Expense status toggling & full invoice settlement payments
-              </p>
-            </div>
-          </Link>
+      {/* --- Dedicated Print Layout (shown only during window.print) --- */}
+      <div className="hidden print:block font-sans text-black p-4 space-y-6">
+        <div className="border-b-2 border-black pb-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black">EXTRATO FINANCEIRO MENSAL</h1>
+            <p className="text-sm font-bold text-gray-700">
+              Workspace: {activeAccount?.name}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xl font-bold uppercase">
+              {dashboardData?.period.monthName} / {dashboardData?.period.year}
+            </p>
+            <p className="text-xs text-gray-500">
+              Impresso em: {new Date().toLocaleString('pt-BR')}
+            </p>
+          </div>
         </div>
+
+        {/* Print Summary Table */}
+        {dashboardData && (
+          <div className="border border-gray-400 p-4 rounded-lg">
+            <h2 className="text-base font-bold uppercase mb-2">Resumo Financeiro</h2>
+            <div className="grid grid-cols-5 gap-2 text-xs">
+              <div>
+                <span className="block font-bold">Receita Total:</span>
+                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalIncome)}</span>
+              </div>
+              <div>
+                <span className="block font-bold">Total Faturado:</span>
+                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalExpenses)}</span>
+              </div>
+              <div>
+                <span className="block font-bold">Total Pago:</span>
+                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalPaid)}</span>
+              </div>
+              <div>
+                <span className="block font-bold">Total Pendente:</span>
+                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalPending)}</span>
+              </div>
+              <div>
+                <span className="block font-bold">Saldo Líquido:</span>
+                <span className="font-black">{formatCurrencyBRL(dashboardData.summary.netBalance)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
