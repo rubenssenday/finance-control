@@ -2,6 +2,7 @@
 
 import React, { useMemo, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 
 interface MonthSelectorProps {
   selectedYear: number;
@@ -9,26 +10,12 @@ interface MonthSelectorProps {
   onChange: (year: number, month: number) => void;
 }
 
-const MONTH_SHORT = [
-  'Jan',
-  'Fev',
-  'Mar',
-  'Abr',
-  'Mai',
-  'Jun',
-  'Jul',
-  'Ago',
-  'Set',
-  'Out',
-  'Nov',
-  'Dez',
-];
-
 export function MonthSelector({
   selectedYear,
   selectedMonth,
   onChange,
 }: MonthSelectorProps) {
+  const { locale, t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const currentRealYear = now.getFullYear();
@@ -45,7 +32,9 @@ export function MonthSelector({
       const m = d.getMonth() + 1;
       const isCurrent = y === currentRealYear && m === currentRealMonth;
       const shortYear = String(y).slice(-2);
-      const label = `${MONTH_SHORT[m - 1]}/${shortYear}`;
+      const rawMonth = d.toLocaleDateString(locale, { month: 'short' }).replace('.', '');
+      const shortMonth = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
+      const label = `${shortMonth}/${shortYear}`;
 
       list.push({
         year: y,
@@ -56,7 +45,7 @@ export function MonthSelector({
     }
 
     return list;
-  }, [currentRealYear, currentRealMonth]);
+  }, [currentRealYear, currentRealMonth, locale]);
 
   const handlePrev = () => {
     if (selectedMonth === 1) {
@@ -99,14 +88,14 @@ export function MonthSelector({
         <div className="flex items-center bg-slate-100 rounded-xl p-0.5">
           <button
             onClick={handlePrev}
-            title="Mês Anterior"
+            title={t('common.previousMonth')}
             className="p-1.5 rounded-lg hover:bg-white text-slate-700 hover:text-indigo-600 transition-colors shadow-2xs"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={handleNext}
-            title="Próximo Mês"
+            title={t('common.nextMonth')}
             className="p-1.5 rounded-lg hover:bg-white text-slate-700 hover:text-indigo-600 transition-colors shadow-2xs"
           >
             <ChevronRight className="w-4 h-4" />
@@ -118,7 +107,7 @@ export function MonthSelector({
           className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-2xs"
         >
           <Calendar className="w-3.5 h-3.5" />
-          <span>Hoje</span>
+          <span>{t('common.today')}</span>
         </button>
       </div>
 

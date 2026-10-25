@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 import {
   ExpenseModal,
   ExpenseData,
@@ -45,6 +46,8 @@ interface DeleteModalState {
 
 export default function ExpensesPage() {
   const { activeAccount } = useAuth();
+  const { t, locale } = useTranslation();
+  const { formatCurrency, formatDate } = useFormatters();
 
   // Current Month/Year Navigation State
   const currentDate = new Date();
@@ -145,8 +148,8 @@ export default function ExpensesPage() {
 
   const monthName = useMemo(() => {
     const date = new Date(selectedYear, selectedMonth - 1, 1);
-    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  }, [selectedYear, selectedMonth]);
+    return formatDate(date, { month: 'long', year: 'numeric' });
+  }, [selectedYear, selectedMonth, formatDate]);
 
   // Aggregate Metrics for Selected Month
   const metrics = useMemo(() => {
@@ -177,26 +180,6 @@ export default function ExpensesPage() {
       totalCount: expenses.length,
     };
   }, [expenses]);
-
-  const formatCurrency = (val: number | string) => {
-    const num = typeof val === 'number' ? val : Number(val) || 0;
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(num);
-  };
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const parts = dateStr.split('T')[0].split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return new Date(dateStr).toLocaleDateString('pt-BR');
-    } catch {
-      return dateStr;
-    }
-  };
 
   // Status Change handler from CashExpenseStatusToggle
   const handleExpenseStatusChange = (updated: any) => {
@@ -230,12 +213,12 @@ export default function ExpensesPage() {
         method: 'DELETE',
       });
 
-      setSuccess('Despesa(s) excluída(s) com sucesso!');
+      setSuccess(t('expenses.deleteModal.success'));
       setTimeout(() => setSuccess(null), 4000);
       setDeleteModal({ isOpen: false, expense: null, scope: 'SINGLE' });
       fetchExpenses();
     } catch (err: any) {
-      setError(err.message || 'Falha ao excluir despesa.');
+      setError(err.message || t('common.error'));
     } finally {
       setIsDeleting(false);
     }
@@ -247,28 +230,28 @@ export default function ExpensesPage() {
         return (
           <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
             <CreditCard className="w-3.5 h-3.5" />
-            <span>{card?.nickname || 'Cartão de Crédito'}</span>
+            <span>{card?.nickname || t('expenses.methods.CREDIT_CARD')}</span>
           </span>
         );
       case 'DEBIT_CARD':
         return (
           <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <Wallet className="w-3.5 h-3.5" />
-            <span>Débito em Conta</span>
+            <span>{t('expenses.methods.DEBIT_CARD')}</span>
           </span>
         );
       case 'PIX':
         return (
           <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
             <QrCode className="w-3.5 h-3.5" />
-            <span>Pix Instantâneo</span>
+            <span>{t('expenses.methods.PIX')}</span>
           </span>
         );
       case 'BOLETO':
         return (
           <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
             <FileText className="w-3.5 h-3.5" />
-            <span>Boleto Bancário</span>
+            <span>{t('expenses.methods.BOLETO')}</span>
           </span>
         );
       default:
@@ -283,13 +266,13 @@ export default function ExpensesPage() {
         <div>
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold tracking-wide uppercase mb-2">
             <Receipt className="w-3.5 h-3.5" />
-            <span>Controle Financeiro</span>
+            <span>{t('common.appName')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Despesas & Recorrências
+            {t('expenses.title')}
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Gerencie pagamentos à vista, parcelamentos bancários e despesas fixas mensais.
+            {t('expenses.subtitle')}
           </p>
         </div>
 
@@ -300,7 +283,7 @@ export default function ExpensesPage() {
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors shadow-xs"
           >
             <Upload className="w-4 h-4 text-slate-500" />
-            <span>Importar CSV</span>
+            <span>{t('expenses.csv.button')}</span>
           </button>
 
           <button
@@ -311,7 +294,7 @@ export default function ExpensesPage() {
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-600/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Despesa</span>
+            <span>{t('expenses.newExpense')}</span>
           </button>
         </div>
       </div>
@@ -323,7 +306,7 @@ export default function ExpensesPage() {
           <div className="flex items-center bg-white/10 rounded-2xl p-1 backdrop-blur-md">
             <button
               onClick={handlePrevMonth}
-              title="Mês Anterior"
+              title={t('common.back')}
               className="p-2 rounded-xl hover:bg-white/10 text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -333,7 +316,7 @@ export default function ExpensesPage() {
             </span>
             <button
               onClick={handleNextMonth}
-              title="Próximo Mês"
+              title={t('common.confirm')}
               className="p-2 rounded-xl hover:bg-white/10 text-white transition-colors"
             >
               <ChevronRight className="w-5 h-5" />
@@ -344,7 +327,7 @@ export default function ExpensesPage() {
             onClick={handleCurrentMonth}
             className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold backdrop-blur-md transition-colors"
           >
-            Hoje
+            {t('common.today')}
           </button>
         </div>
 
@@ -352,7 +335,7 @@ export default function ExpensesPage() {
         <div className="flex items-center space-x-6 text-sm">
           <div>
             <span className="text-xs uppercase tracking-wider text-slate-400 block font-medium">
-              Total do Mês
+              {t('expenses.metrics.monthTotal')}
             </span>
             <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
               {formatCurrency(metrics.total)}
@@ -367,7 +350,7 @@ export default function ExpensesPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Total Faturado
+              {t('expenses.metrics.totalBilled')}
             </span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Receipt className="w-4 h-4" />
@@ -377,7 +360,7 @@ export default function ExpensesPage() {
             {formatCurrency(metrics.total)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {metrics.totalCount} {metrics.totalCount === 1 ? 'registro' : 'registros'} neste mês
+            {t('expenses.metrics.recordsCount', { count: metrics.totalCount })}
           </p>
         </div>
 
@@ -385,7 +368,7 @@ export default function ExpensesPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-              Liquidado / Pago
+              {t('expenses.metrics.liquidated')}
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
@@ -395,7 +378,7 @@ export default function ExpensesPage() {
             {formatCurrency(metrics.paid)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {metrics.paidCount} de {metrics.totalCount} contas liquidadas
+            {t('expenses.metrics.liquidatedCount', { paid: metrics.paidCount, total: metrics.totalCount })}
           </p>
         </div>
 
@@ -403,7 +386,7 @@ export default function ExpensesPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-              A Pagar / Pendente
+              {t('expenses.metrics.pendingToPay')}
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <Clock className="w-4 h-4" />
@@ -413,7 +396,7 @@ export default function ExpensesPage() {
             {formatCurrency(metrics.pending)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {metrics.pendingCount} pendências em aberto
+            {t('expenses.metrics.pendingCount', { count: metrics.pendingCount })}
           </p>
         </div>
       </div>
@@ -446,7 +429,7 @@ export default function ExpensesPage() {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Buscar por descrição ou observações..."
+            placeholder={t('expenses.filters.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all placeholder:text-slate-400"
@@ -461,11 +444,11 @@ export default function ExpensesPage() {
             onChange={(e) => setSelectedMethod(e.target.value)}
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
           >
-            <option value="ALL">Todos os Meios</option>
-            <option value="CREDIT_CARD">Cartão de Crédito</option>
-            <option value="DEBIT_CARD">Débito</option>
-            <option value="PIX">Pix</option>
-            <option value="BOLETO">Boleto</option>
+            <option value="ALL">{t('expenses.filters.allMethods')}</option>
+            <option value="CREDIT_CARD">{t('expenses.methods.CREDIT_CARD')}</option>
+            <option value="DEBIT_CARD">{t('expenses.methods.DEBIT_CARD')}</option>
+            <option value="PIX">{t('expenses.methods.PIX')}</option>
+            <option value="BOLETO">{t('expenses.methods.BOLETO')}</option>
           </select>
 
           {/* Status Filter */}
@@ -474,9 +457,9 @@ export default function ExpensesPage() {
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
           >
-            <option value="ALL">Todos os Status</option>
-            <option value="PAID">Liquidados / Pagos</option>
-            <option value="PENDING">Pendentes</option>
+            <option value="ALL">{t('expenses.filters.allStatuses')}</option>
+            <option value="PAID">{t('expenses.metrics.liquidated')}</option>
+            <option value="PENDING">{t('expenses.status.PENDING')}</option>
           </select>
         </div>
       </div>
@@ -487,7 +470,7 @@ export default function ExpensesPage() {
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
             <span className="text-sm font-semibold text-slate-500">
-              Carregando lançamentos do mês...
+              {t('common.loading')}
             </span>
           </div>
         ) : expenses.length === 0 ? (
@@ -496,10 +479,10 @@ export default function ExpensesPage() {
               <Receipt className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900">
-              Nenhuma despesa encontrada
+              {t('expenses.empty.title')}
             </h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-              Não há lançamentos cadastrados para o período de {monthName} com os filtros selecionados.
+              {t('expenses.empty.subtitle', { period: monthName })}
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <button
@@ -510,14 +493,14 @@ export default function ExpensesPage() {
                 className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-600/20"
               >
                 <Plus className="w-4 h-4" />
-                <span>Adicionar Despesa</span>
+                <span>{t('expenses.newExpense')}</span>
               </button>
               <button
                 onClick={() => setIsCsvModalOpen(true)}
                 className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors"
               >
                 <Upload className="w-4 h-4 text-slate-500" />
-                <span>Importar CSV</span>
+                <span>{t('expenses.csv.button')}</span>
               </button>
             </div>
           </div>
@@ -526,18 +509,17 @@ export default function ExpensesPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 pl-6 pr-3">Vencimento / Data</th>
-                  <th className="py-3.5 px-3">Descrição</th>
-                  <th className="py-3.5 px-3">Categoria</th>
-                  <th className="py-3.5 px-3">Pagamento</th>
-                  <th className="py-3.5 px-3">Status</th>
-                  <th className="py-3.5 px-3 text-right">Valor</th>
-                  <th className="py-3.5 pl-3 pr-6 text-right">Ações</th>
+                  <th className="py-3.5 pl-6 pr-3">{t('expenses.table.dueOrDate')}</th>
+                  <th className="py-3.5 px-3">{t('expenses.table.description')}</th>
+                  <th className="py-3.5 px-3">{t('expenses.table.category')}</th>
+                  <th className="py-3.5 px-3">{t('expenses.table.payment')}</th>
+                  <th className="py-3.5 px-3">{t('expenses.table.status')}</th>
+                  <th className="py-3.5 px-3 text-right">{t('expenses.table.amount')}</th>
+                  <th className="py-3.5 pl-3 pr-6 text-right">{t('expenses.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {expenses.map((expense) => {
-                  const isUpdatingThis = updatingStatusId === expense.id;
                   const isInstallment = Boolean(
                     expense.installmentTotal && expense.installmentTotal > 1,
                   );
@@ -554,7 +536,7 @@ export default function ExpensesPage() {
                             {formatDate(expense.dueDate)}
                           </span>
                           <span className="text-[10px] text-slate-400">
-                            Compra: {formatDate(expense.transactionDate)}
+                            {t('expenses.table.purchaseDate', { date: formatDate(expense.transactionDate) })}
                           </span>
                         </div>
                       </td>
@@ -580,7 +562,7 @@ export default function ExpensesPage() {
                           {expense.isRecurring && (
                             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
                               <Repeat className="w-3 h-3" />
-                              <span>Fixa</span>
+                              <span>{t('expenses.table.fixed')}</span>
                             </span>
                           )}
                         </div>
@@ -608,7 +590,7 @@ export default function ExpensesPage() {
                             <span>{expense.category.name}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">Geral</span>
+                          <span className="text-xs text-slate-400">{t('expenses.table.generalCategory')}</span>
                         )}
                       </td>
 
@@ -644,14 +626,14 @@ export default function ExpensesPage() {
                               setExpenseToEdit(expense);
                               setIsExpenseModalOpen(true);
                             }}
-                            title="Editar lançamento"
+                            title={t('expenses.table.editTooltip')}
                             className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => promptDelete(expense)}
-                            title="Excluir lançamento"
+                            title={t('expenses.table.deleteTooltip')}
                             className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -676,20 +658,15 @@ export default function ExpensesPage() {
                 <Trash2 className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-bold text-slate-900">
-                Confirmar Exclusão
+                {t('expenses.deleteModal.title')}
               </h3>
             </div>
 
             <p className="text-sm text-slate-600">
-              Tem certeza que deseja excluir a despesa{' '}
-              <strong className="text-slate-900">
-                &ldquo;{deleteModal.expense.description}&rdquo;
-              </strong>{' '}
-              no valor de{' '}
-              <strong className="text-slate-900">
-                {formatCurrency(deleteModal.expense.amount)}
-              </strong>
-              ?
+              {t('expenses.deleteModal.prompt', {
+                description: deleteModal.expense.description,
+                amount: formatCurrency(deleteModal.expense.amount),
+              })}
             </p>
 
             {/* Scope Selection for Installments / Recurring */}
@@ -698,7 +675,7 @@ export default function ExpensesPage() {
               deleteModal.expense.isRecurring) && (
               <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
                 <span className="text-xs font-bold text-slate-700 block uppercase tracking-wider">
-                  Escopo da Exclusão
+                  {t('expenses.deleteModal.scopeTitle')}
                 </span>
                 <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
                   <input
@@ -710,7 +687,7 @@ export default function ExpensesPage() {
                     }
                     className="text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span>Excluir apenas este lançamento específico</span>
+                  <span>{t('expenses.deleteModal.scopeSingle')}</span>
                 </label>
                 <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
                   <input
@@ -722,7 +699,7 @@ export default function ExpensesPage() {
                     }
                     className="text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span>Excluir este e todos os lançamentos futuros da série</span>
+                  <span>{t('expenses.deleteModal.scopeFuture')}</span>
                 </label>
               </div>
             )}
@@ -736,7 +713,7 @@ export default function ExpensesPage() {
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -745,7 +722,7 @@ export default function ExpensesPage() {
                 className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-all shadow-md shadow-rose-600/20 disabled:opacity-50"
               >
                 {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Excluir</span>
+                <span>{t('common.delete')}</span>
               </button>
             </div>
           </div>
@@ -758,7 +735,7 @@ export default function ExpensesPage() {
         onClose={() => setIsExpenseModalOpen(false)}
         onSuccess={() => {
           fetchExpenses();
-          setSuccess('Despesa salva com sucesso!');
+          setSuccess(t('expenses.deleteModal.savedSuccess'));
           setTimeout(() => setSuccess(null), 4000);
         }}
         expenseToEdit={expenseToEdit}
@@ -770,7 +747,7 @@ export default function ExpensesPage() {
         onClose={() => setIsCsvModalOpen(false)}
         onSuccess={(count) => {
           fetchExpenses();
-          setSuccess(`${count} despesas importadas com sucesso!`);
+          setSuccess(t('expenses.deleteModal.importedSuccess', { count }));
           setTimeout(() => setSuccess(null), 5000);
         }}
       />

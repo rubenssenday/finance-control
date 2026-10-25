@@ -16,6 +16,7 @@ import {
 import { InstallmentPreviewTable } from './InstallmentPreviewTable';
 import { CategoryIcon } from '../categories/CategoryIcon';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 
 export type PaymentMethodType = 'CREDIT_CARD' | 'DEBIT_CARD' | 'BOLETO' | 'PIX';
 export type PaymentStatusType = 'PENDING' | 'PAID';
@@ -83,6 +84,8 @@ export function ExpenseModal({
   onSuccess,
   expenseToEdit,
 }: ExpenseModalProps) {
+  const { t, locale } = useTranslation();
+  const { formatCurrency } = useFormatters();
   const isEditing = Boolean(expenseToEdit);
 
   const [description, setDescription] = useState('');
@@ -175,23 +178,23 @@ export function ExpenseModal({
 
     const trimmedDesc = description.trim();
     if (trimmedDesc.length < 3 || trimmedDesc.length > 100) {
-      setError('Description must be between 3 and 100 characters.');
+      setError(locale === 'pt-BR' ? 'A descrição deve ter entre 3 e 100 caracteres.' : 'Description must be between 3 and 100 characters.');
       return;
     }
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount < 0.01 || parsedAmount > 999999.99) {
-      setError('Amount must be between R$ 0.01 and R$ 999,999.99.');
+      setError(locale === 'pt-BR' ? 'O valor deve ser entre R$ 0,01 e R$ 999.999,99.' : 'Amount must be between 0.01 and 999,999.99.');
       return;
     }
 
     if (!categoryId) {
-      setError('Please select a category.');
+      setError(t('expenses.form.selectCategory'));
       return;
     }
 
     if (paymentMethod === 'CREDIT_CARD' && !cardId) {
-      setError('Please select a credit card for this transaction.');
+      setError(t('expenses.form.selectCard'));
       return;
     }
 
@@ -236,7 +239,7 @@ export function ExpenseModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to save expense. Please verify fields.');
+      setError(err.message || (locale === 'pt-BR' ? 'Falha ao salvar despesa. Verifique os campos.' : 'Failed to save expense. Please verify fields.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -252,7 +255,7 @@ export function ExpenseModal({
               <Receipt className="w-5 h-5" />
             </span>
             <h2 className="text-lg font-bold text-slate-900">
-              {isEditing ? 'Edit Expense' : 'New Expense'}
+              {isEditing ? t('expenses.editExpense') : t('expenses.newExpense')}
             </h2>
           </div>
           <button
@@ -275,7 +278,7 @@ export function ExpenseModal({
         {/* Payment Method Selector Tabs */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Payment Method *
+            {t('expenses.form.paymentMethod')} *
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <button
@@ -288,7 +291,7 @@ export function ExpenseModal({
               }`}
             >
               <CardIcon className="w-3.5 h-3.5" />
-              <span>Credit Card</span>
+              <span>{t('expenses.methods.CREDIT_CARD')}</span>
             </button>
 
             <button
@@ -301,7 +304,7 @@ export function ExpenseModal({
               }`}
             >
               <Wallet className="w-3.5 h-3.5" />
-              <span>Debit Card</span>
+              <span>{t('expenses.methods.DEBIT_CARD')}</span>
             </button>
 
             <button
@@ -314,7 +317,7 @@ export function ExpenseModal({
               }`}
             >
               <QrCode className="w-3.5 h-3.5" />
-              <span>Pix</span>
+              <span>{t('expenses.methods.PIX')}</span>
             </button>
 
             <button
@@ -327,7 +330,7 @@ export function ExpenseModal({
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Boleto</span>
+              <span>{t('expenses.methods.BOLETO')}</span>
             </button>
           </div>
         </div>
@@ -341,7 +344,7 @@ export function ExpenseModal({
                 htmlFor="expense-description"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Description *
+                {t('common.description')} *
               </label>
               <input
                 id="expense-description"
@@ -352,7 +355,7 @@ export function ExpenseModal({
                 maxLength={100}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. Supermarket, Netflix, Electricity"
+                placeholder={t('expenses.form.descriptionPlaceholder')}
                 className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 border border-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
             </div>
@@ -362,11 +365,11 @@ export function ExpenseModal({
                 htmlFor="expense-amount"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Amount (BRL) *
+                {t('expenses.form.amountLabel')}
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-400 pointer-events-none">
-                  R$
+                  {locale === 'en-US' ? '$' : 'R$'}
                 </span>
                 <input
                   id="expense-amount"
@@ -378,7 +381,7 @@ export function ExpenseModal({
                   required
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="150.00"
+                  placeholder={t('expenses.form.amountPlaceholder')}
                   className="w-full pl-9 pr-3.5 py-2 rounded-xl text-xs bg-slate-50 border border-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono"
                 />
               </div>
@@ -392,7 +395,7 @@ export function ExpenseModal({
                 htmlFor="expense-date"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Transaction Date *
+                {t('expenses.form.transactionDate')} *
               </label>
               <input
                 id="expense-date"
@@ -410,7 +413,7 @@ export function ExpenseModal({
                 htmlFor="expense-category"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Category *
+                {t('expenses.form.category')} *
               </label>
               <select
                 id="expense-category"
@@ -438,7 +441,7 @@ export function ExpenseModal({
                     htmlFor="expense-card"
                     className="block text-xs font-semibold text-slate-700 mb-1"
                   >
-                    Select Credit Card *
+                    {t('expenses.form.selectCard')} *
                   </label>
                   <select
                     id="expense-card"
@@ -462,7 +465,7 @@ export function ExpenseModal({
                       htmlFor="expense-installments"
                       className="block text-xs font-semibold text-slate-700 mb-1"
                     >
-                      Installments (1x to 72x)
+                      {t('expenses.form.installmentCount')} (1x - 72x)
                     </label>
                     <select
                       id="expense-installments"
@@ -475,7 +478,7 @@ export function ExpenseModal({
                     >
                       {Array.from({ length: 72 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
-                          {n}x {n === 1 ? '(Single)' : 'installments'}
+                          {n}x {n === 1 ? `(${t('expenses.form.singleInstallment')})` : t('expenses.form.multipleInstallments', { n })}
                         </option>
                       ))}
                     </select>
@@ -502,7 +505,7 @@ export function ExpenseModal({
                 htmlFor="expense-due-date"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Boleto Due Date (defaults to +3 days)
+                {t('expenses.form.boletoDueDate')}
               </label>
               <input
                 id="expense-due-date"
@@ -519,7 +522,7 @@ export function ExpenseModal({
           {paymentMethod !== 'CREDIT_CARD' && (
             <div className="flex items-center space-x-3 pt-1">
               <label className="text-xs font-semibold text-slate-700">
-                Payment Status:
+                {t('expenses.form.statusToggle')}
               </label>
               <div className="flex items-center space-x-2">
                 <button
@@ -531,7 +534,7 @@ export function ExpenseModal({
                       : 'bg-white border-slate-200 text-slate-600'
                   }`}
                 >
-                  Paid now
+                  {t('expenses.form.paidNow')}
                 </button>
                 <button
                   type="button"
@@ -542,7 +545,7 @@ export function ExpenseModal({
                       : 'bg-white border-slate-200 text-slate-600'
                   }`}
                 >
-                  Pending
+                  {t('expenses.form.pendingStatus')}
                 </button>
               </div>
             </div>
@@ -564,7 +567,7 @@ export function ExpenseModal({
                 className="text-xs font-medium text-slate-700 flex items-center space-x-1.5"
               >
                 <Repeat className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Repeat monthly (Materialize 12-month forward projection)</span>
+                <span>{t('expenses.form.repeatMonthlyHelp')}</span>
               </label>
             </div>
           )}
@@ -577,7 +580,7 @@ export function ExpenseModal({
               disabled={isSubmitting}
               className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -585,7 +588,7 @@ export function ExpenseModal({
               className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-xs disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isEditing ? 'Save Changes' : 'Record Expense'}</span>
+              <span>{isEditing ? t('expenses.form.saveChanges') : t('expenses.form.recordExpense')}</span>
             </button>
           </div>
         </form>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import { CategoryData } from './CategoryCard';
 import { CategoryIcon } from './CategoryIcon';
 import { IconPicker } from './IconPicker';
@@ -21,6 +22,7 @@ export function CategoryModal({
   onSuccess,
   categoryToEdit,
 }: CategoryModalProps) {
+  const { t } = useTranslation();
   const isEditing = Boolean(categoryToEdit);
 
   const [name, setName] = useState('');
@@ -109,12 +111,12 @@ export function CategoryModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                {isEditing ? 'Edit Category' : 'Create New Category'}
+                {isEditing ? t('categories.form.editTitle') : t('categories.form.createTitle')}
               </h2>
               <p className="text-xs text-slate-500">
                 {isEditing
-                  ? 'Update category name, icon, and color'
-                  : 'Define a custom financial category for this workspace'}
+                  ? t('categories.form.editSubtitle')
+                  : t('categories.form.createSubtitle')}
               </p>
             </div>
           </div>
@@ -138,14 +140,14 @@ export function CategoryModal({
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Live Preview
+                {t('categories.form.livePreview')}
               </span>
               <span className="text-2xs px-2 py-0.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-600">
-                {type}
+                {type === 'INCOME' ? t('categories.card.income') : t('categories.card.expense')}
               </span>
             </div>
             <p className="text-sm font-bold text-slate-900 truncate mt-0.5">
-              {name.trim() || 'Category Name'}
+              {name.trim() || t('categories.form.name')}
             </p>
           </div>
         </div>
@@ -164,7 +166,7 @@ export function CategoryModal({
               htmlFor="categoryName"
               className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
             >
-              Category Name
+              {t('categories.form.name')}
             </label>
             <input
               id="categoryName"
@@ -175,12 +177,12 @@ export function CategoryModal({
               maxLength={40}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Streaming Services, Groceries"
+              placeholder={t('categories.form.namePlaceholder')}
               className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-slate-900 transition-all outline-hidden"
             />
             <div className="flex justify-between mt-1 text-2xs text-slate-400">
-              <span>2 to 40 characters</span>
-              <span>{name.length}/40</span>
+              <span>{t('categories.form.lengthRule')}</span>
+              <span>{t('categories.form.charCount', { current: name.length })}</span>
             </div>
           </div>
 
@@ -191,7 +193,7 @@ export function CategoryModal({
                 htmlFor="categoryType"
                 className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
               >
-                Classification Type
+                {t('categories.form.classificationType')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -203,7 +205,7 @@ export function CategoryModal({
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  Expense Category
+                  {t('categories.form.expenseType')}
                 </button>
                 <button
                   type="button"
@@ -214,7 +216,7 @@ export function CategoryModal({
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  Income Category
+                  {t('categories.form.incomeType')}
                 </button>
               </div>
             </div>
@@ -238,7 +240,7 @@ export function CategoryModal({
               disabled={isSubmitting}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -248,12 +250,12 @@ export function CategoryModal({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
+                  <span>{t('common.saving')}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>{isEditing ? 'Save Changes' : 'Create Category'}</span>
+                  <span>{isEditing ? t('categories.form.saveButton') : t('categories.form.createButton')}</span>
                 </>
               )}
             </button>

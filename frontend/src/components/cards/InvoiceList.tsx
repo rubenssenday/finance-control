@@ -8,6 +8,7 @@ import {
 } from '@/components/settlement/InvoicePaymentModal';
 import { InvoiceReopenModal } from '@/components/settlement/InvoiceReopenModal';
 import { Calendar, Receipt, CheckCircle2, RotateCcw } from 'lucide-react';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 
 export interface InvoiceData {
   id: string;
@@ -34,11 +35,6 @@ interface InvoiceListProps {
   onInvoiceSettled?: () => void;
 }
 
-const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
-
 export function InvoiceList({
   invoices,
   isLoading,
@@ -46,6 +42,8 @@ export function InvoiceList({
   cardBrand,
   onInvoiceSettled,
 }: InvoiceListProps) {
+  const { t, locale } = useTranslation();
+  const { formatCurrency, formatDate } = useFormatters();
   const [selectedPayInvoice, setSelectedPayInvoice] = useState<InvoiceModalData | null>(null);
   const [selectedReopenInvoice, setSelectedReopenInvoice] = useState<InvoiceModalData | null>(null);
 
@@ -62,38 +60,19 @@ export function InvoiceList({
   if (invoices.length === 0) {
     return (
       <div className="p-6 text-center text-xs text-slate-500 font-medium">
-        Nenhuma fatura encontrada para este cartão.
+        {t('dashboard.creditCardsBlock.empty')}
       </div>
     );
   }
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(val);
-  };
-
-  const formatDate = (isoString: string) => {
-    try {
-      const parts = isoString.split('T')[0].split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}`;
-      }
-      return new Date(isoString).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-      });
-    } catch {
-      return isoString;
-    }
-  };
 
   return (
     <>
       <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
         {invoices.map((inv) => {
-          const monthLabel = `${MONTH_NAMES[inv.billingMonth - 1]} ${inv.billingYear}`;
+          const monthLabel = formatDate(new Date(inv.billingYear, inv.billingMonth - 1, 1), {
+            month: 'long',
+            year: 'numeric',
+          });
           const isPaid = inv.status === 'PAID';
 
           const modalData: InvoiceModalData = {
@@ -106,7 +85,7 @@ export function InvoiceList({
             dueDate: inv.dueDate,
             updatedAt: inv.updatedAt || new Date().toISOString(),
             card: {
-              nickname: cardNickname || inv.card?.nickname || 'Cartão',
+              nickname: cardNickname || inv.card?.nickname || (locale === 'pt-BR' ? 'Cartão' : 'Card'),
               brand: cardBrand || inv.card?.brand || 'VISA',
             },
           };
@@ -132,11 +111,11 @@ export function InvoiceList({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-900 truncate">{monthLabel}</p>
+                  <p className="font-bold text-slate-900 truncate capitalize">{monthLabel}</p>
                   <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 mt-0.5 whitespace-nowrap">
-                    <span>Fecha: {formatDate(inv.closingDate)}</span>
+                    <span>{t('dashboard.creditCardsBlock.closingDate')}: {formatDate(inv.closingDate, { day: '2-digit', month: '2-digit' })}</span>
                     <span>•</span>
-                    <span>Vence: {formatDate(inv.dueDate)}</span>
+                    <span>{t('dashboard.creditCardsBlock.dueDate')}: {formatDate(inv.dueDate, { day: '2-digit', month: '2-digit' })}</span>
                   </div>
                 </div>
               </div>
@@ -158,21 +137,21 @@ export function InvoiceList({
                     <button
                       type="button"
                       onClick={() => setSelectedReopenInvoice(modalData)}
-                      title="Reabrir fatura (reverte compras para pendente)"
+                      title={t('settlement.reopenInvoiceTitle')}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 text-[11px] font-semibold flex items-center space-x-1 transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Reabrir</span>
+                      <span className="hidden sm:inline">{t('dashboard.creditCardsBlock.reopenInvoice')}</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setSelectedPayInvoice(modalData)}
-                      title={`Pagar fatura de ${formatCurrency(inv.totalAmount)}`}
+                      title={`${t('dashboard.creditCardsBlock.payInvoice')} (${formatCurrency(inv.totalAmount)})`}
                       className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-[11px] uppercase tracking-wide shadow-xs shadow-emerald-600/20 transition-all cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Pagar</span>
+                      <span>{t('dashboard.creditCardsBlock.payInvoice')}</span>
                     </button>
                   )}
                 </div>

@@ -2,15 +2,13 @@
 
 import React from 'react';
 import { MonthlyDashboardData } from './dashboard-types';
-import { exportMonthlyStatementCsv, triggerPrintPdf, formatCurrencyBRL } from '@/lib/export-utils';
+import { exportMonthlyStatementCsv, triggerPrintPdf } from '@/lib/export-utils';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import {
   X,
   FileSpreadsheet,
   Printer,
   Download,
-  Calendar,
-  CheckCircle2,
-  FileText,
 } from 'lucide-react';
 
 interface MonthlyExportModalProps {
@@ -24,6 +22,8 @@ export function MonthlyExportModal({
   onClose,
   data,
 }: MonthlyExportModalProps) {
+  const { t, formatCurrency } = useTranslation();
+
   if (!isOpen) return null;
 
   const handleCsvExport = () => {
@@ -49,10 +49,10 @@ export function MonthlyExportModal({
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">
-                Exportar Extrato Mensal
+                {t('dashboard.export.modalTitle')}
               </h3>
               <p className="text-xs text-slate-500">
-                {data.period.monthName} de {data.period.year}
+                {data.period.monthName} / {data.period.year}
               </p>
             </div>
           </div>
@@ -68,7 +68,7 @@ export function MonthlyExportModal({
         {/* Statement Overview Card */}
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Período Selecionado</span>
+            <span>{t('dashboard.export.periodLabel')}</span>
             <span className="font-bold text-slate-900 capitalize">
               {data.period.monthName} / {data.period.year}
             </span>
@@ -77,23 +77,23 @@ export function MonthlyExportModal({
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/60 text-xs">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Total Receitas
+                {t('dashboard.summary.totalIncome')}
               </span>
               <span className="font-bold text-emerald-600 text-sm">
-                {formatCurrencyBRL(data.summary.totalIncome)}
+                {formatCurrency(data.summary.totalIncome)}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Total Despesas
+                {t('dashboard.summary.totalCommitted')}
               </span>
               <span className="font-bold text-slate-900 text-sm">
-                {formatCurrencyBRL(data.summary.totalExpenses)}
+                {formatCurrency(data.summary.totalExpenses)}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Saldo Projetado
+                {t('dashboard.summary.netBalance')}
               </span>
               <span
                 className={`font-bold text-sm ${
@@ -102,15 +102,15 @@ export function MonthlyExportModal({
                     : 'text-rose-600'
                 }`}
               >
-                {formatCurrencyBRL(data.summary.netBalance)}
+                {formatCurrency(data.summary.netBalance)}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Lançamentos Totais
+                {t('common.actions')}
               </span>
               <span className="font-bold text-slate-700 text-sm">
-                {data.summary.expenseCount + data.summary.incomeCount} itens
+                {data.summary.expenseCount + data.summary.incomeCount} {t('common.items')}
               </span>
             </div>
           </div>
@@ -127,10 +127,10 @@ export function MonthlyExportModal({
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <h4 className="text-sm font-bold text-slate-900">
-              Planilha Excel (CSV)
+              {t('dashboard.export.csvOption')}
             </h4>
             <p className="text-xs text-slate-500 mt-1">
-              Arquivo formatado em UTF-8 com separador padrão para Excel e Google Sheets.
+              {t('dashboard.export.csvDescription')}
             </p>
           </button>
 
@@ -143,10 +143,10 @@ export function MonthlyExportModal({
               <Printer className="w-5 h-5" />
             </div>
             <h4 className="text-sm font-bold text-slate-900">
-              Imprimir / Salvar PDF
+              {t('dashboard.export.pdfOption')}
             </h4>
             <p className="text-xs text-slate-500 mt-1">
-              Gera relatório executivo formatado em A4 com vetores nítidos via navegador.
+              {t('dashboard.export.pdfDescription')}
             </p>
           </button>
         </div>
@@ -157,7 +157,7 @@ export function MonthlyExportModal({
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            Cancelar
+            {t('common.cancel')}
           </button>
         </div>
       </div>

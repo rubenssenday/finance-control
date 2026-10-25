@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { CategoryBreakdownItem } from './dashboard-types';
-import { formatCurrencyBRL } from '@/lib/export-utils';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import { CategoryIcon } from '../categories/CategoryIcon';
-import { PieChart, Sparkles } from 'lucide-react';
+import { PieChart } from 'lucide-react';
 
 interface CategoryDonutChartProps {
   categories: CategoryBreakdownItem[];
@@ -17,6 +17,7 @@ export function CategoryDonutChart({
   totalExpenses,
   isLoading,
 }: CategoryDonutChartProps) {
+  const { t, formatCurrency } = useTranslation();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (isLoading) {
@@ -64,10 +65,10 @@ export function CategoryDonutChart({
           </div>
           <div>
             <h3 className="text-sm font-extrabold text-slate-900">
-              Gastos por Categoria
+              {t('dashboard.categoryBreakdown.title')}
             </h3>
             <p className="text-[11px] text-slate-400">
-              Distribuição proporcional do mês
+              {t('dashboard.categoryBreakdown.subtitle')}
             </p>
           </div>
         </div>
@@ -130,7 +131,7 @@ export function CategoryDonutChart({
                     {activeCategory.name}
                   </span>
                   <span className="text-base font-black text-slate-900 mt-0.5 tracking-tight">
-                    {formatCurrencyBRL(activeCategory.amount)}
+                    {formatCurrency(activeCategory.amount)}
                   </span>
                   <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 mt-1">
                     {activeCategory.percentage.toFixed(1)}%
@@ -139,13 +140,13 @@ export function CategoryDonutChart({
               ) : (
                 <>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Total do Mês
+                    {t('common.total')}
                   </span>
                   <span className="text-base font-black text-slate-900 mt-0.5 tracking-tight">
-                    {formatCurrencyBRL(totalExpenses)}
+                    {formatCurrency(totalExpenses)}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-0.5">
-                    {categories.length} {categories.length === 1 ? 'categoria' : 'categorias'}
+                    {categories.length} {categories.length === 1 ? t('common.item') : t('common.items')}
                   </span>
                 </>
               )}
@@ -182,7 +183,7 @@ export function CategoryDonutChart({
 
                   <div className="flex items-center space-x-2 shrink-0">
                     <span className="font-bold text-slate-900">
-                      {formatCurrencyBRL(cat.amount)}
+                      {formatCurrency(cat.amount)}
                     </span>
                     <span className="text-[10px] font-bold text-slate-400 w-10 text-right">
                       {cat.percentage.toFixed(1)}%
@@ -198,7 +199,7 @@ export function CategoryDonutChart({
           <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
             <PieChart className="w-5 h-5" />
           </div>
-          <p>Sem despesas registradas para categorização neste mês.</p>
+          <p>{t('dashboard.categoryBreakdown.noExpenses')}</p>
         </div>
       )}
     </div>

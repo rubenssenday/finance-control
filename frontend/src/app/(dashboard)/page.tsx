@@ -16,7 +16,7 @@ import {
   InvoiceModalData,
 } from '@/components/settlement/InvoicePaymentModal';
 import { InvoiceReopenModal } from '@/components/settlement/InvoiceReopenModal';
-import { formatCurrencyBRL, formatDateBRL } from '@/lib/export-utils';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import {
   LayoutDashboard,
   Download,
@@ -35,6 +35,7 @@ import {
 
 export default function DashboardPage() {
   const { user, activeAccount } = useAuth();
+  const { t, formatCurrency, formatDateTime } = useTranslation();
 
   // Current Month/Year Navigation State
   const currentDate = new Date();
@@ -67,11 +68,11 @@ export default function DashboardPage() {
 
       setDashboardData(res.data);
     } catch (err: any) {
-      setError(err.message || 'Falha ao carregar dados do painel financeiro.');
+      setError(err.message || t('dashboard.errorFetch'));
     } finally {
       setIsLoading(false);
     }
-  }, [activeAccount, selectedYear, selectedMonth]);
+  }, [activeAccount, selectedYear, selectedMonth, t]);
 
   useEffect(() => {
     fetchMonthlyDashboard();
@@ -96,13 +97,13 @@ export default function DashboardPage() {
         <div>
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold tracking-wide uppercase mb-2">
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Painel Financeiro Consolidado</span>
+            <span>{t('dashboard.title')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            {activeAccount ? activeAccount.name : 'Painel Financeiro'}
+            {activeAccount ? activeAccount.name : t('common.appName')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Visão consolidada de receitas, faturas de cartão de crédito e despesas à vista.
+            {t('dashboard.subtitle')}
           </p>
         </div>
 
@@ -114,7 +115,7 @@ export default function DashboardPage() {
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-xs disabled:opacity-50"
           >
             <Download className="w-4 h-4 text-slate-500" />
-            <span>Exportar Extrato</span>
+            <span>{t('dashboard.exportStatement')}</span>
           </button>
         </div>
       </div>
@@ -185,36 +186,40 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-lg space-y-4 print:hidden">
               <div className="flex items-center space-x-2 text-indigo-300 text-xs font-bold uppercase tracking-wider">
                 <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Saúde Financeira do Mês</span>
+                <span>{t('dashboard.healthCard.title')}</span>
               </div>
 
               <div>
                 <p className="text-2xl font-black tracking-tight text-white">
-                  {dashboardData.summary.netBalance >= 0 ? 'Superávit em Dia' : 'Atenção aos Gastos'}
+                  {dashboardData.summary.netBalance >= 0
+                    ? t('dashboard.healthCard.surplusTitle')
+                    : t('dashboard.healthCard.deficitTitle')}
                 </p>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                   {dashboardData.summary.netBalance >= 0
-                    ? `Suas receitas superam as despesas em ${formatCurrencyBRL(
-                        dashboardData.summary.netBalance,
-                      )}. Você tem capacidade de poupança neste ciclo.`
-                    : `Suas despesas projetadas superam suas receitas em ${formatCurrencyBRL(
-                        Math.abs(dashboardData.summary.netBalance),
-                      )}. Reavalie obrigações ou antecipe entradas.`}
+                    ? t('dashboard.healthCard.surplusDescription', {
+                        amount: formatCurrency(dashboardData.summary.netBalance),
+                      })
+                    : t('dashboard.healthCard.deficitDescription', {
+                        amount: formatCurrency(Math.abs(dashboardData.summary.netBalance)),
+                      })}
                 </p>
               </div>
 
               {/* Progress bar of Paid vs Total Expenses */}
               <div className="pt-2 border-t border-white/10 space-y-2">
                 <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-300">Progresso de Quitação</span>
+                  <span className="text-slate-300">{t('dashboard.healthCard.settlementProgress')}</span>
                   <span className="text-emerald-400 font-bold">
                     {dashboardData.summary.totalExpenses > 0
-                      ? `${Math.round(
-                          (dashboardData.summary.totalPaid /
-                            dashboardData.summary.totalExpenses) *
-                            100,
-                        )}% pago`
-                      : '0% pago'}
+                      ? t('dashboard.healthCard.paidPercentage', {
+                          percentage: Math.round(
+                            (dashboardData.summary.totalPaid /
+                              dashboardData.summary.totalExpenses) *
+                              100,
+                          ),
+                        })
+                      : t('dashboard.healthCard.paidPercentage', { percentage: 0 })}
                   </span>
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden">
@@ -242,14 +247,14 @@ export default function DashboardPage() {
                   href="/expenses"
                   className="inline-flex items-center space-x-1 text-indigo-300 hover:text-white transition-colors"
                 >
-                  <span>Ver todas despesas</span>
+                  <span>{t('dashboard.healthCard.viewAllExpenses')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
                 <Link
                   href="/incomes"
                   className="inline-flex items-center space-x-1 text-emerald-300 hover:text-white transition-colors"
                 >
-                  <span>Ver receitas</span>
+                  <span>{t('dashboard.healthCard.viewIncomes')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -302,7 +307,7 @@ export default function DashboardPage() {
         invoice={selectedPayInvoice}
         onSuccess={() => {
           setSelectedPayInvoice(null);
-          setSuccess('Fatura quitada com sucesso!');
+          setSuccess(t('settlement.invoicePaidSuccess'));
           setTimeout(() => setSuccess(null), 4000);
           fetchMonthlyDashboard();
         }}
@@ -315,7 +320,7 @@ export default function DashboardPage() {
         invoice={selectedReopenInvoice}
         onSuccess={() => {
           setSelectedReopenInvoice(null);
-          setSuccess('Fatura reaberta com sucesso.');
+          setSuccess(t('settlement.invoiceReopenedSuccess'));
           setTimeout(() => setSuccess(null), 4000);
           fetchMonthlyDashboard();
         }}
@@ -325,9 +330,9 @@ export default function DashboardPage() {
       <div className="hidden print:block font-sans text-black p-4 space-y-6">
         <div className="border-b-2 border-black pb-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-black">EXTRATO FINANCEIRO MENSAL</h1>
+            <h1 className="text-2xl font-black">{t('dashboard.print.title')}</h1>
             <p className="text-sm font-bold text-gray-700">
-              Workspace: {activeAccount?.name}
+              {t('dashboard.print.workspace', { name: activeAccount?.name || '' })}
             </p>
           </div>
           <div className="text-right">
@@ -335,7 +340,7 @@ export default function DashboardPage() {
               {dashboardData?.period.monthName} / {dashboardData?.period.year}
             </p>
             <p className="text-xs text-gray-500">
-              Impresso em: {new Date().toLocaleString('pt-BR')}
+              {t('dashboard.print.printedAt', { date: formatDateTime(new Date()) })}
             </p>
           </div>
         </div>
@@ -343,27 +348,27 @@ export default function DashboardPage() {
         {/* Print Summary Table */}
         {dashboardData && (
           <div className="border border-gray-400 p-4 rounded-lg">
-            <h2 className="text-base font-bold uppercase mb-2">Resumo Financeiro</h2>
+            <h2 className="text-base font-bold uppercase mb-2">{t('dashboard.print.summary')}</h2>
             <div className="grid grid-cols-5 gap-2 text-xs">
               <div>
-                <span className="block font-bold">Receita Total:</span>
-                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalIncome)}</span>
+                <span className="block font-bold">{t('dashboard.print.totalIncome')}</span>
+                <span className="font-semibold">{formatCurrency(dashboardData.summary.totalIncome)}</span>
               </div>
               <div>
-                <span className="block font-bold">Total Faturado:</span>
-                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalExpenses)}</span>
+                <span className="block font-bold">{t('dashboard.print.totalBilled')}</span>
+                <span className="font-semibold">{formatCurrency(dashboardData.summary.totalExpenses)}</span>
               </div>
               <div>
-                <span className="block font-bold">Total Pago:</span>
-                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalPaid)}</span>
+                <span className="block font-bold">{t('dashboard.print.totalPaid')}</span>
+                <span className="font-semibold">{formatCurrency(dashboardData.summary.totalPaid)}</span>
               </div>
               <div>
-                <span className="block font-bold">Total Pendente:</span>
-                <span className="font-semibold">{formatCurrencyBRL(dashboardData.summary.totalPending)}</span>
+                <span className="block font-bold">{t('dashboard.print.totalPending')}</span>
+                <span className="font-semibold">{formatCurrency(dashboardData.summary.totalPending)}</span>
               </div>
               <div>
-                <span className="block font-bold">Saldo Líquido:</span>
-                <span className="font-black">{formatCurrencyBRL(dashboardData.summary.netBalance)}</span>
+                <span className="block font-bold">{t('dashboard.print.netBalance')}</span>
+                <span className="font-black">{formatCurrency(dashboardData.summary.netBalance)}</span>
               </div>
             </div>
           </div>

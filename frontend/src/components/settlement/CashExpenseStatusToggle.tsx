@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { CheckCircle2, Clock, Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/i18n-context';
+import { CheckCircle2, Clock, Loader2, CreditCard } from 'lucide-react';
 
 export interface CashExpenseItem {
   id: string;
@@ -28,6 +29,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
   onStatusChange,
   onError,
 }) => {
+  const { t } = useTranslation();
   const [isUpdating, setIsUpdating] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<
     'PAID' | 'PENDING' | 'OVERDUE' | null
@@ -40,14 +42,8 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
         <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed select-none">
           <CreditCard className="w-3.5 h-3.5 text-slate-400" />
           <span>
-            {expense.paymentStatus === 'PAID' ? 'Pago (Fatura)' : 'Na Fatura'}
+            {expense.paymentStatus === 'PAID' ? t('dashboard.creditCardsBlock.invoicePaid') : t('dashboard.creditCardsBlock.invoiceOpen')}
           </span>
-        </div>
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/cc:flex flex-col items-center z-40 pointer-events-none w-56">
-          <div className="bg-slate-900 text-white text-[11px] font-medium rounded-lg px-2.5 py-1.5 text-center shadow-lg leading-tight">
-            Despesas com cartão de crédito são liquidadas na fatura mensal do cartão.
-          </div>
-          <div className="w-2 h-2 bg-slate-900 rotate-45 -mt-1"></div>
         </div>
       </div>
     );
@@ -90,14 +86,13 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
       setOptimisticStatus(previousOptimistic);
 
       if (err.code === 'CONCURRENT_STATUS_MUTATION') {
-        const msg =
-          'O status foi atualizado em outra sessão. Os dados mais recentes foram recarregados.';
+        const msg = t('settlement.concurrentStatusError');
         if (onError) onError(msg);
         if (err.currentData && onStatusChange) {
           onStatusChange(err.currentData);
         }
       } else {
-        const msg = err.message || 'Falha ao atualizar status de pagamento.';
+        const msg = err.message || t('settlement.updateStatusError');
         if (onError) onError(msg);
       }
     } finally {
@@ -111,7 +106,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
         type="button"
         onClick={handleToggle}
         disabled={isUpdating}
-        title="Clique para reabrir como Pendente"
+        title={t('expenses.status.PAID')}
         className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100/90 active:scale-95 transition-all shadow-xs cursor-pointer select-none group/toggle"
       >
         {isUpdating ? (
@@ -119,7 +114,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
         ) : (
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 group-hover/toggle:scale-110 transition-transform" />
         )}
-        <span>Pago</span>
+        <span>{t('expenses.status.PAID')}</span>
       </button>
     );
   }
@@ -131,7 +126,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
         type="button"
         onClick={handleToggle}
         disabled={isUpdating}
-        title="Conta vencida! Clique para liquidar como Pago"
+        title={t('expenses.status.OVERDUE')}
         className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50/80 text-rose-700 border border-rose-300 hover:bg-rose-100 active:scale-95 transition-all shadow-xs cursor-pointer select-none group/toggle"
       >
         {isUpdating ? (
@@ -142,7 +137,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
           </span>
         )}
-        <span>Atrasado ({days}d)</span>
+        <span>{t('expenses.status.OVERDUE')} ({days}d)</span>
       </button>
     );
   }
@@ -153,7 +148,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
       type="button"
       onClick={handleToggle}
       disabled={isUpdating}
-      title="Clique para marcar como Pago"
+      title={t('expenses.status.PENDING')}
       className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100/90 active:scale-95 transition-all shadow-xs cursor-pointer select-none group/toggle"
     >
       {isUpdating ? (
@@ -161,7 +156,7 @@ export const CashExpenseStatusToggle: React.FC<CashExpenseStatusToggleProps> = (
       ) : (
         <Clock className="w-3.5 h-3.5 text-amber-600 group-hover/toggle:scale-110 transition-transform" />
       )}
-      <span>Pendente</span>
+      <span>{t('expenses.status.PENDING')}</span>
     </button>
   );
 };

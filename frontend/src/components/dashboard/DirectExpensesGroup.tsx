@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { DirectExpensesBlock, DirectExpenseItem } from './dashboard-types';
-import { formatCurrencyBRL, formatDateBRL } from '@/lib/export-utils';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import { CategoryIcon } from '../categories/CategoryIcon';
 import { CashExpenseStatusToggle } from '../settlement/CashExpenseStatusToggle';
 import {
@@ -27,6 +27,7 @@ export function DirectExpensesGroup({
   onError,
   isLoading,
 }: DirectExpensesGroupProps) {
+  const { t, formatCurrency, formatDate } = useTranslation();
   if (isLoading) {
     return (
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4 animate-pulse">
@@ -39,6 +40,19 @@ export function DirectExpensesGroup({
       </div>
     );
   }
+
+  const getMethodTitle = (key: 'BOLETO' | 'PIX' | 'DEBIT_CARD') => {
+    switch (key) {
+      case 'BOLETO':
+        return t('dashboard.directExpensesBlock.boletos');
+      case 'PIX':
+        return t('dashboard.directExpensesBlock.pix');
+      case 'DEBIT_CARD':
+        return t('dashboard.directExpensesBlock.debit');
+      default:
+        return key;
+    }
+  };
 
   const methodSections = [
     {
@@ -77,23 +91,23 @@ export function DirectExpensesGroup({
         <div>
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold tracking-wide uppercase mb-1">
             <Wallet className="w-3.5 h-3.5" />
-            <span>Bloco 2: Despesas Diretas</span>
+            <span>{t('dashboard.directExpensesBlock.badge')}</span>
           </div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Boletos, PIX & Débito em Conta
+            {t('dashboard.directExpensesBlock.title')}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Obrigações liquidadas à vista ou com cobrança bancária direta.
+            {t('dashboard.directExpensesBlock.subtitle')}
           </p>
         </div>
 
         <div className="flex items-center space-x-3 text-right">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-              Total Direto
+              {t('common.subtotal')}
             </span>
             <span className="text-lg font-black text-slate-900">
-              {formatCurrencyBRL(directExpenses.totalLiability)}
+              {formatCurrency(directExpenses.totalLiability)}
             </span>
           </div>
         </div>
@@ -104,6 +118,7 @@ export function DirectExpensesGroup({
         {methodSections.map((section) => {
           const { key, data, icon: Icon, headerBg, headerText, iconBg } = section;
           const hasItems = data.items.length > 0;
+          const methodTitle = getMethodTitle(key);
 
           return (
             <div
@@ -118,10 +133,12 @@ export function DirectExpensesGroup({
                   </div>
                   <div>
                     <h3 className={`text-sm font-bold ${headerText}`}>
-                      {data.label}
+                      {methodTitle}
                     </h3>
                     <p className="text-xs text-slate-500">
-                      {data.itemCount} {data.itemCount === 1 ? 'registro' : 'registros'} neste mês
+                      {data.itemCount === 1
+                        ? t('dashboard.directExpensesBlock.recordCountOne', { count: data.itemCount })
+                        : t('dashboard.directExpensesBlock.recordCountOther', { count: data.itemCount })}
                     </p>
                   </div>
                 </div>
@@ -129,26 +146,26 @@ export function DirectExpensesGroup({
                 <div className="flex items-center space-x-4 text-xs">
                   <div>
                     <span className="text-[10px] uppercase text-slate-400 block font-semibold">
-                      Pago
+                      {t('expenses.status.PAID')}
                     </span>
                     <span className="font-bold text-emerald-700">
-                      {formatCurrencyBRL(data.paidAmount)}
+                      {formatCurrency(data.paidAmount)}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase text-slate-400 block font-semibold">
-                      Pendente
+                      {t('expenses.status.PENDING')}
                     </span>
                     <span className="font-bold text-amber-600">
-                      {formatCurrencyBRL(data.pendingAmount)}
+                      {formatCurrency(data.pendingAmount)}
                     </span>
                   </div>
                   <div className="pl-2 border-l border-slate-200 text-right">
                     <span className="text-[10px] uppercase text-slate-400 block font-semibold">
-                      Subtotal
+                      {t('common.subtotal')}
                     </span>
                     <span className="font-black text-slate-900 text-sm">
-                      {formatCurrencyBRL(data.subtotal)}
+                      {formatCurrency(data.subtotal)}
                     </span>
                   </div>
                 </div>
@@ -160,11 +177,11 @@ export function DirectExpensesGroup({
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        <th className="py-2.5 px-4">Vencimento</th>
-                        <th className="py-2.5 px-3">Descrição</th>
-                        <th className="py-2.5 px-3">Categoria</th>
-                        <th className="py-2.5 px-3">Status</th>
-                        <th className="py-2.5 px-4 text-right">Valor</th>
+                        <th className="py-2.5 px-4">{t('dashboard.directExpensesBlock.dueDate')}</th>
+                        <th className="py-2.5 px-3">{t('common.description')}</th>
+                        <th className="py-2.5 px-3">{t('common.category')}</th>
+                        <th className="py-2.5 px-3">{t('common.status')}</th>
+                        <th className="py-2.5 px-4 text-right">{t('common.amount')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -175,7 +192,7 @@ export function DirectExpensesGroup({
                         >
                           <td className="py-3 px-4 whitespace-nowrap">
                             <span className="font-semibold text-slate-800 text-xs">
-                              {formatDateBRL(item.dueDate)}
+                              {formatDate(item.dueDate)}
                             </span>
                           </td>
                           <td className="py-3 px-3 font-bold text-slate-900">
@@ -196,7 +213,7 @@ export function DirectExpensesGroup({
                                 <span>{item.category.name}</span>
                               </div>
                             ) : (
-                              <span className="text-slate-400">Geral</span>
+                              <span className="text-slate-400">{t('expenses.table.generalCategory')}</span>
                             )}
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
@@ -207,7 +224,7 @@ export function DirectExpensesGroup({
                             />
                           </td>
                           <td className="py-3 px-4 text-right whitespace-nowrap font-extrabold text-slate-900">
-                            {formatCurrencyBRL(item.amount)}
+                            {formatCurrency(item.amount)}
                           </td>
                         </tr>
                       ))}
@@ -216,7 +233,7 @@ export function DirectExpensesGroup({
                 </div>
               ) : (
                 <div className="p-4 text-center text-xs text-slate-400">
-                  Nenhum lançamento de {data.label.toLowerCase()} cadastrado para este mês.
+                  {t('dashboard.directExpensesBlock.emptyMethod', { method: methodTitle.toLowerCase() })}
                 </div>
               )}
             </div>

@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import {
   CreditCard,
   CheckCircle2,
   Calendar,
-  DollarSign,
   AlertCircle,
   Loader2,
   X,
@@ -41,6 +41,7 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
   invoice,
   onSuccess,
 }) => {
+  const { t, formatCurrency, formatDate } = useTranslation();
   const [paymentDate, setPaymentDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,31 +57,9 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
 
   if (!isOpen || !invoice) return null;
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(val);
-  };
-
-  const formatDate = (isoStr: string) => {
-    try {
-      const parts = isoStr.split('T')[0].split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return new Date(isoStr).toLocaleDateString('pt-BR');
-    } catch {
-      return isoStr;
-    }
-  };
-
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-  ];
-  const cycleTitle = `${monthNames[invoice.billingMonth - 1]} de ${invoice.billingYear}`;
-  const cardName = invoice.card?.nickname || 'Cartão de Crédito';
+  const cycleDate = new Date(invoice.billingYear, invoice.billingMonth - 1, 1);
+  const cycleTitle = formatDate(cycleDate, 'shortMonth');
+  const cardName = invoice.card?.nickname || t('nav.cards');
 
   const handleConfirmPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,9 +81,9 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
       onClose();
     } catch (err: any) {
       if (err.code === 'CONCURRENT_STATUS_MUTATION') {
-        setError('A fatura foi modificada em outra sessão. Recarregue a página.');
+        setError(t('settlement.concurrentInvoiceError'));
       } else {
-        setError(err.message || 'Erro ao registrar pagamento da fatura.');
+        setError(err.message || t('settlement.payInvoiceError'));
       }
     } finally {
       setIsLoading(false);
@@ -122,7 +101,7 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold tracking-tight">
-                Pagar Fatura do Cartão
+                {t('settlement.payInvoiceHeader')}
               </h2>
               <p className="text-xs text-emerald-100/90 font-medium">
                 {cardName} • {cycleTitle}
@@ -151,8 +130,8 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
           {/* Invoice Summary Card */}
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span>Valor Total da Fatura</span>
-              <span>Vencimento em {formatDate(invoice.dueDate)}</span>
+              <span>{t('settlement.totalInvoiceAmount')}</span>
+              <span>{t('settlement.dueDateOn', { date: formatDate(invoice.dueDate) })}</span>
             </div>
             <div className="text-2xl font-black text-slate-900 tracking-tight flex items-baseline space-x-1">
               <span className="text-emerald-600">
@@ -162,7 +141,7 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
             <div className="flex items-center space-x-2 text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-200/60">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>
-                Liquidação consolidada com baixa automática de todos os lançamentos
+                {t('settlement.consolidatedSettlementNote')}
               </span>
             </div>
           </div>
@@ -170,7 +149,7 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
           {/* Payment Date Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Data Efetiva do Pagamento
+              {t('settlement.effectivePaymentDate')}
             </label>
             <div className="relative">
               <input
@@ -187,12 +166,11 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
 
           {/* Confirmation Prompt Box */}
           <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-900 leading-relaxed font-medium">
-            Confirmar o pagamento da fatura de <strong>{cardName}</strong> no valor de{' '}
-            <strong className="text-emerald-700 font-bold">
-              {formatCurrency(invoice.totalAmount)}
-            </strong>{' '}
-            com data de liquidação em{' '}
-            <strong>{formatDate(paymentDate || invoice.dueDate)}</strong>?
+            {t('settlement.confirmPaymentPrompt', {
+              cardName,
+              amount: formatCurrency(invoice.totalAmount),
+              date: formatDate(paymentDate || invoice.dueDate),
+            })}
           </div>
 
           {/* Action Buttons */}
@@ -203,7 +181,7 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
               disabled={isLoading}
               className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -213,12 +191,12 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Processando...</span>
+                  <span>{t('settlement.processing')}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmar Pagamento</span>
+                  <span>{t('settlement.confirmSettlement')}</span>
                 </>
               )}
             </button>

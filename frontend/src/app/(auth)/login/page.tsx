@@ -4,9 +4,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/lib/i18n/i18n-context';
+import { LocaleSwitcher } from '@/components/layout/LocaleSwitcher';
 import { WalletCards, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,16 +46,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100">
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <LocaleSwitcher />
+      </div>
       <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100">
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-8 text-center">
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-4">
             <WalletCards className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome Back</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('auth.loginTitle')}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Access your financial control dashboard
+            {t('common.appName')}
           </p>
         </div>
 
@@ -87,7 +93,7 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          <span>Continue with Google</span>
+          <span>{t('auth.continueWithGoogle')}</span>
         </button>
 
         <div className="relative mb-6">
@@ -95,7 +101,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-slate-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-3 text-slate-400 font-semibold">Or email</span>
+            <span className="bg-white px-3 text-slate-400 font-semibold">{t('auth.or')}</span>
           </div>
         </div>
 
@@ -103,7 +109,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Email Address
+              {t('auth.emailLabel')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -125,7 +131,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Password
+              {t('auth.passwordLabel')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -154,7 +160,7 @@ export default function LoginPage() {
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <span>Sign In</span>
+                <span>{t('auth.signInButton')}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -162,9 +168,9 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-sm text-slate-500 mt-6">
-          Don&apos;t have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link href="/register" className="font-semibold text-indigo-600 hover:text-indigo-700">
-            Create account
+            {t('auth.registerLink')}
           </Link>
         </p>
       </div>

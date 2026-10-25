@@ -20,6 +20,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 
 export interface CardData {
   id: string;
@@ -51,18 +52,13 @@ export function CreditCardVisual({
   onToggleArchive,
   onInvoiceSettled,
 }: CreditCardVisualProps) {
+  const { t } = useTranslation();
+  const { formatCurrency } = useFormatters();
   const [isExpanded, setIsExpanded] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
 
   const theme = BRAND_THEMES[card.brand] || BRAND_THEMES.VISA;
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(val);
-  };
 
   const limitUsed = Math.max(0, card.creditLimit - card.availableLimit);
   const usedPercentage = Math.min(
@@ -142,19 +138,19 @@ export function CreditCardVisual({
           <div className="flex items-end justify-between z-10 text-xs pt-2 border-t border-white/10">
             <div>
               <p className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">
-                Billing Cycle
+                {t('dashboard.creditCardsBlock.title')}
               </p>
               <div className="flex items-center space-x-2 text-white font-medium mt-0.5 text-[11px]">
-                <span>Closes: Day {card.closingDay}</span>
+                <span>{t('cards.cardSummary.closingDayLabel', { day: card.closingDay })}</span>
                 <span>•</span>
-                <span>Due: Day {card.dueDay}</span>
+                <span>{t('cards.cardSummary.dueDayLabel', { day: card.dueDay })}</span>
               </div>
             </div>
 
             {card.currentInvoice && (
               <div className="text-right">
                 <p className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">
-                  Open Invoice
+                  {t('cards.cardSummary.currentInvoice')}
                 </p>
                 <p className="text-xs font-bold text-white mt-0.5">
                   {formatCurrency(card.currentInvoice.totalAmount)}
@@ -168,7 +164,7 @@ export function CreditCardVisual({
       {/* Credit Limit & Progress Bar */}
       <div className="px-5 pb-4 space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-medium">Available Limit</span>
+          <span className="text-slate-500 font-medium">{t('cards.cardSummary.availableLimit')}</span>
           <span className="font-bold text-slate-900">
             {formatCurrency(card.availableLimit)}
           </span>
@@ -189,8 +185,8 @@ export function CreditCardVisual({
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-slate-400">
-          <span>Used: {formatCurrency(limitUsed)}</span>
-          <span>Limit: {formatCurrency(card.creditLimit)}</span>
+          <span>{t('cards.cardSummary.committedLimit')}: {formatCurrency(limitUsed)}</span>
+          <span>{t('cards.cardSummary.totalLimit')}: {formatCurrency(card.creditLimit)}</span>
         </div>
       </div>
 
@@ -202,7 +198,7 @@ export function CreditCardVisual({
           className="inline-flex items-center space-x-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
         >
           <Receipt className="w-3.5 h-3.5" />
-          <span>{isExpanded ? 'Hide Invoices' : 'View Invoices'}</span>
+          <span>{isExpanded ? (t('common.close') + ' ' + t('dashboard.creditCardsBlock.title')) : (t('common.search') + ' ' + t('dashboard.creditCardsBlock.title'))}</span>
           {isExpanded ? (
             <ChevronUp className="w-3.5 h-3.5" />
           ) : (
@@ -214,7 +210,7 @@ export function CreditCardVisual({
           <button
             type="button"
             onClick={() => onEdit(card)}
-            title="Edit card"
+            title={t('common.edit')}
             className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -223,7 +219,7 @@ export function CreditCardVisual({
           <button
             type="button"
             onClick={() => onToggleArchive(card)}
-            title={card.isArchived ? 'Unarchive card' : 'Archive card'}
+            title={card.isArchived ? t('cards.archiveModal.restoreButton') : t('cards.archiveModal.archiveButton')}
             className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-white rounded-lg transition-colors"
           >
             {card.isArchived ? (
@@ -236,7 +232,7 @@ export function CreditCardVisual({
           <button
             type="button"
             onClick={() => onDelete(card)}
-            title="Delete card"
+            title={t('common.delete')}
             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />

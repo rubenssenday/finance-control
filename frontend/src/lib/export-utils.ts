@@ -1,13 +1,11 @@
 import { MonthlyDashboardData } from '@/components/dashboard/dashboard-types';
+import { formatCurrency, formatDate } from './i18n/formatters';
 
 /**
  * Formats a number as Brazilian Real (BRL).
  */
 export function formatCurrencyBRL(val: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(val || 0);
+  return formatCurrency(val, 'pt-BR');
 }
 
 /**
@@ -15,15 +13,7 @@ export function formatCurrencyBRL(val: number): string {
  */
 export function formatDateBRL(isoStr?: string | null): string {
   if (!isoStr) return '-';
-  try {
-    const parts = isoStr.split('T')[0].split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return new Date(isoStr).toLocaleDateString('pt-BR');
-  } catch {
-    return isoStr;
-  }
+  return formatDate(isoStr, 'pt-BR', 'numeric');
 }
 
 /**

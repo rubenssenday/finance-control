@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { CategoryIcon } from '../categories/CategoryIcon';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 
 export type IncomeStatusType = 'RECEIVED' | 'PENDING';
 
@@ -60,6 +61,7 @@ export function IncomeModal({
   onSuccess,
   incomeToEdit,
 }: IncomeModalProps) {
+  const { t, locale } = useTranslation();
   const isEditing = Boolean(incomeToEdit);
 
   const [description, setDescription] = useState('');
@@ -150,18 +152,18 @@ export function IncomeModal({
     setError(null);
 
     if (!description.trim()) {
-      setError('A descrição é obrigatória (3 a 100 caracteres).');
+      setError(locale === 'pt-BR' ? 'A descrição é obrigatória (3 a 100 caracteres).' : 'Description is required (3 to 100 characters).');
       return;
     }
 
     const numericAmount = parseFloat(amount.replace(',', '.'));
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      setError('O valor da receita deve ser maior que zero.');
+      setError(locale === 'pt-BR' ? 'O valor da receita deve ser maior que zero.' : 'Income amount must be greater than zero.');
       return;
     }
 
     if (!categoryId) {
-      setError('Selecione uma categoria de receita.');
+      setError(t('expenses.form.selectCategory'));
       return;
     }
 
@@ -196,7 +198,7 @@ export function IncomeModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Erro ao salvar receita.');
+      setError(err.message || t('common.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -213,10 +215,10 @@ export function IncomeModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                {isEditing ? 'Editar Receita' : 'Nova Receita'}
+                {isEditing ? t('incomes.editIncome') : t('incomes.newIncome')}
               </h2>
               <p className="text-xs text-slate-500">
-                Registre entradas de caixa, salários e rendimentos
+                {t('incomes.subtitle')}
               </p>
             </div>
           </div>
@@ -244,7 +246,7 @@ export function IncomeModal({
               htmlFor="income-description"
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
             >
-              Descrição da Receita *
+              {t('incomes.form.description')} *
             </label>
             <input
               id="income-description"
@@ -253,7 +255,7 @@ export function IncomeModal({
               required
               minLength={3}
               maxLength={100}
-              placeholder="Ex: Salário Mensal, Freelance, Dividendos..."
+              placeholder={t('incomes.form.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-medium placeholder:text-slate-400"
@@ -268,11 +270,11 @@ export function IncomeModal({
                 htmlFor="income-amount"
                 className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
               >
-                Valor (R$) *
+                {t('incomes.form.amountLabel')}
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                  R$
+                  {locale === 'en-US' ? '$' : 'R$'}
                 </span>
                 <input
                   id="income-amount"
@@ -282,7 +284,7 @@ export function IncomeModal({
                   min="0.01"
                   max="999999.99"
                   required
-                  placeholder="0,00"
+                  placeholder={t('expenses.form.amountPlaceholder')}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
@@ -296,7 +298,7 @@ export function IncomeModal({
                 htmlFor="income-receipt-date"
                 className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
               >
-                Data do Recebimento *
+                {t('incomes.form.receiptDate')} *
               </label>
               <div className="relative">
                 <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -319,7 +321,7 @@ export function IncomeModal({
               htmlFor="income-category"
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
             >
-              Categoria de Receita *
+              {t('incomes.form.category')} *
             </label>
             <div className="relative">
               <select
@@ -341,7 +343,7 @@ export function IncomeModal({
           {/* Settlement Status (Received vs Pending) */}
           <div>
             <span className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-              Status do Pagamento
+              {t('incomes.form.statusToggle')}
             </span>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -354,7 +356,7 @@ export function IncomeModal({
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Recebido (Na Conta)</span>
+                <span>{t('incomes.form.receivedNow')}</span>
               </button>
 
               <button
@@ -367,7 +369,7 @@ export function IncomeModal({
                 }`}
               >
                 <Clock className="w-4 h-4 text-amber-600" />
-                <span>Previsto (A Receber)</span>
+                <span>{t('incomes.form.pending')}</span>
               </button>
             </div>
           </div>
@@ -387,10 +389,10 @@ export function IncomeModal({
                 <div className="flex-1">
                   <span className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                     <Repeat className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Recorrência Mensal (Receita Fixa)</span>
+                    <span>{t('incomes.form.recurring')}</span>
                   </span>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Gera automaticamente projeções prospectivas de 12 meses no fluxo de caixa (ideal para salário ou aluguel).
+                    {t('incomes.form.recurringHelp')}
                   </p>
                 </div>
               </label>
@@ -403,14 +405,14 @@ export function IncomeModal({
               htmlFor="income-notes"
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
             >
-              Observações (Opcional)
+              {t('incomes.form.notes')}
             </label>
             <textarea
               id="income-notes"
               name="notes"
               rows={2}
               maxLength={500}
-              placeholder="Informações adicionais sobre o pagamento..."
+              placeholder={locale === 'pt-BR' ? 'Informações adicionais sobre o pagamento...' : 'Additional payment notes...'}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-slate-400"
@@ -425,7 +427,7 @@ export function IncomeModal({
               disabled={isSubmitting}
               className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -433,7 +435,7 @@ export function IncomeModal({
               className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-md shadow-emerald-600/20 transition-all disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{isEditing ? 'Salvar Alterações' : 'Registrar Receita'}</span>
+              <span>{isEditing ? t('incomes.form.saveChanges') : t('incomes.form.recordIncome')}</span>
             </button>
           </div>
         </form>

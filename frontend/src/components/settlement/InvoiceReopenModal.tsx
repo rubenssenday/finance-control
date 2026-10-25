@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import { AlertTriangle, AlertCircle, Loader2, X, RotateCcw } from 'lucide-react';
 import { InvoiceModalData } from './InvoicePaymentModal';
 
@@ -18,24 +19,15 @@ export const InvoiceReopenModal: React.FC<InvoiceReopenModalProps> = ({
   invoice,
   onSuccess,
 }) => {
+  const { t, formatCurrency, formatDate } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !invoice) return null;
 
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-  ];
-  const cycleTitle = `${monthNames[invoice.billingMonth - 1]} de ${invoice.billingYear}`;
-  const cardName = invoice.card?.nickname || 'Cartão de Crédito';
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(val);
-  };
+  const cycleDate = new Date(invoice.billingYear, invoice.billingMonth - 1, 1);
+  const cycleTitle = formatDate(cycleDate, 'shortMonth');
+  const cardName = invoice.card?.nickname || t('nav.cards');
 
   const handleConfirmReopen = async () => {
     if (isLoading) return;
@@ -56,9 +48,9 @@ export const InvoiceReopenModal: React.FC<InvoiceReopenModalProps> = ({
       onClose();
     } catch (err: any) {
       if (err.code === 'CONCURRENT_STATUS_MUTATION') {
-        setError('A fatura foi modificada em outra sessão. Recarregue a página.');
+        setError(t('settlement.concurrentInvoiceError'));
       } else {
-        setError(err.message || 'Erro ao reabrir fatura.');
+        setError(err.message || t('settlement.reopenInvoiceError'));
       }
     } finally {
       setIsLoading(false);
@@ -76,7 +68,7 @@ export const InvoiceReopenModal: React.FC<InvoiceReopenModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold tracking-tight">
-                Reabrir Fatura Paga
+                {t('settlement.reopenPaidInvoice')}
               </h2>
               <p className="text-xs text-amber-100/90 font-medium">
                 {cardName} • {cycleTitle}
@@ -105,16 +97,18 @@ export const InvoiceReopenModal: React.FC<InvoiceReopenModalProps> = ({
           {/* Warning Message Box */}
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-2">
             <p className="text-sm font-bold text-amber-950">
-              Deseja realmente reabrir esta fatura?
+              {t('settlement.reopenWarningTitle')}
             </p>
             <p className="text-xs text-amber-800 leading-relaxed font-medium">
-              Ao reabrir a fatura de <strong>{cardName}</strong> ({formatCurrency(invoice.totalAmount)}), 
-              o status da fatura será revertido e <strong>todas as compras e parcelas incluídas voltarão ao status Pendente</strong>.
+              {t('settlement.reopenWarningDescription', {
+                cardName,
+                amount: formatCurrency(invoice.totalAmount),
+              })}
             </p>
           </div>
 
           <p className="text-xs text-slate-500 leading-relaxed">
-            Esta ação permite corrigir pagamentos acidentais ou ajustar compras lançadas nesta fatura antes de liquidá-la novamente.
+            {t('settlement.reopenActionHelp')}
           </p>
 
           {/* Action Buttons */}
@@ -125,7 +119,7 @@ export const InvoiceReopenModal: React.FC<InvoiceReopenModalProps> = ({
               disabled={isLoading}
               className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -136,12 +130,12 @@ export const InvoiceReopenModal: React.FC<InvoiceReopenModalProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Reabrindo...</span>
+                  <span>{t('settlement.reopening')}</span>
                 </>
               ) : (
                 <>
                   <RotateCcw className="w-4 h-4" />
-                  <span>Sim, Reabrir Fatura</span>
+                  <span>{t('settlement.confirmReopenButton')}</span>
                 </>
               )}
             </button>

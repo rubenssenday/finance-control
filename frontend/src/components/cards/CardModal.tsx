@@ -15,6 +15,7 @@ import {
   CardBrandType,
 } from './constants/brand-themes';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 
 interface CardModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export function CardModal({
   onSuccess,
   cardToEdit,
 }: CardModalProps) {
+  const { t, locale } = useTranslation();
   const isEditing = Boolean(cardToEdit);
 
   const [nickname, setNickname] = useState('');
@@ -135,7 +137,7 @@ export function CardModal({
               <CardIcon className="w-5 h-5" />
             </span>
             <h2 className="text-lg font-bold text-slate-900">
-              {isEditing ? 'Edit Credit Card' : 'New Credit Card'}
+              {isEditing ? t('cards.editCard') : t('cards.newCard')}
             </h2>
           </div>
           <button
@@ -162,14 +164,14 @@ export function CardModal({
 
           <div className="z-10 mt-1">
             <p className="text-base font-bold tracking-tight truncate">
-              {nickname.trim() || 'Card Nickname'}
+              {nickname.trim() || t('cards.form.nicknamePlaceholder')}
             </p>
             <p className="text-xs font-mono text-white/70">•••• •••• •••• {brand.slice(0, 4)}</p>
           </div>
 
           <div className="flex items-center justify-between z-10 text-[11px] pt-1.5 border-t border-white/10">
-            <span>Closes: Day {closingDay}</span>
-            <span>Due: Day {dueDay}</span>
+            <span>{t('cards.cardSummary.closingDayLabel', { day: closingDay })}</span>
+            <span>{t('cards.cardSummary.dueDayLabel', { day: dueDay })}</span>
           </div>
         </div>
 
@@ -189,7 +191,7 @@ export function CardModal({
               htmlFor="card-nickname"
               className="block text-xs font-semibold text-slate-700 mb-1"
             >
-              Card Nickname *
+              {t('cards.form.nickname')} *
             </label>
             <input
               id="card-nickname"
@@ -200,7 +202,7 @@ export function CardModal({
               maxLength={30}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              placeholder="e.g. Nubank Platinum, XP Infinite"
+              placeholder={t('cards.form.nicknamePlaceholder')}
               className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 border border-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
@@ -211,7 +213,7 @@ export function CardModal({
               htmlFor="card-brand"
               className="block text-xs font-semibold text-slate-700 mb-1.5"
             >
-              Network Brand *
+              {t('cards.form.brand')} *
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
               {AVAILABLE_BRANDS.map((b) => (
@@ -237,11 +239,11 @@ export function CardModal({
               htmlFor="card-credit-limit"
               className="block text-xs font-semibold text-slate-700 mb-1"
             >
-              Credit Limit (BRL) *
+              {t('cards.form.limit')} *
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-400 pointer-events-none">
-                R$
+                {locale === 'en-US' ? '$' : 'R$'}
               </span>
               <input
                 id="card-credit-limit"
@@ -266,7 +268,7 @@ export function CardModal({
                 htmlFor="card-closing-day"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Closing Day (1–31) *
+                {t('cards.form.closingDay')} (1–31) *
               </label>
               <input
                 id="card-closing-day"
@@ -286,7 +288,7 @@ export function CardModal({
                 htmlFor="card-due-day"
                 className="block text-xs font-semibold text-slate-700 mb-1"
               >
-                Due Day (1–31) *
+                {t('cards.form.dueDay')} (1–31) *
               </label>
               <input
                 id="card-due-day"
@@ -304,7 +306,7 @@ export function CardModal({
 
           {closingDay === dueDay && (
             <p className="text-[11px] text-amber-600 font-medium">
-              ⚠️ Closing day and due day cannot be identical.
+              ⚠️ {locale === 'pt-BR' ? 'O melhor dia e o vencimento não podem ser no mesmo dia.' : 'Closing day and due day cannot be identical.'}
             </p>
           )}
 
@@ -316,7 +318,7 @@ export function CardModal({
               disabled={isSubmitting}
               className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -324,7 +326,7 @@ export function CardModal({
               className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-xs disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isEditing ? 'Save Changes' : 'Create Card'}</span>
+              <span>{isEditing ? t('cards.form.saveChanges') : t('cards.form.recordCard')}</span>
             </button>
           </div>
         </form>

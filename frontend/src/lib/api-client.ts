@@ -31,11 +31,16 @@ export async function apiClient<T = any>(
     ...(options.headers as Record<string, string>),
   };
 
-  // Attach active account ID from localStorage if available in browser
+  // Attach active account ID & Accept-Language from localStorage if available in browser
   if (typeof window !== 'undefined') {
     const activeAccountId = localStorage.getItem('active_account_id');
     if (activeAccountId && !headers['X-Account-Id']) {
       headers['X-Account-Id'] = activeAccountId;
+    }
+
+    if (!headers['Accept-Language']) {
+      const activeLocale = localStorage.getItem('financial_control_locale') || 'pt-BR';
+      headers['Accept-Language'] = activeLocale;
     }
   }
 

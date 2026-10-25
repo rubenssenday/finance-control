@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import {
   CategoryCard,
   CategoryData,
@@ -28,6 +29,7 @@ const MAX_CUSTOM_CATEGORIES = 50;
 type FilterType = 'ALL' | 'EXPENSE' | 'INCOME';
 
 export default function CategoriesSettingsPage() {
+  const { t } = useTranslation();
   const { activeAccount } = useAuth();
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,7 +130,7 @@ export default function CategoriesSettingsPage() {
         method: 'DELETE',
       });
 
-      setSuccess(`Category "${categoryToDelete.name}" successfully deleted.`);
+      setSuccess(t('categories.deletedSuccess', { name: categoryToDelete.name }));
       setCategoryToDelete(null);
       fetchCategories();
     } catch (err: any) {
@@ -147,10 +149,10 @@ export default function CategoriesSettingsPage() {
             <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
               <Tags className="w-5 h-5" />
             </span>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Categories</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('categories.title')}</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Organize expenses and incomes with customized names, icons, and colors.
+            {t('categories.subtitle')}
           </p>
         </div>
 
@@ -164,9 +166,9 @@ export default function CategoriesSettingsPage() {
                 ? 'bg-amber-50 border-amber-200 text-amber-700'
                 : 'bg-slate-50 border-slate-200 text-slate-600'
             }`}
-            title="Max 50 custom categories allowed per account"
+            title={t('categories.customQuotaTooltip', { max: MAX_CUSTOM_CATEGORIES })}
           >
-            <span>Custom categories:</span>
+            <span>{t('categories.customCategoriesLabel')}</span>
             <span className="font-mono">
               {customCount} / {MAX_CUSTOM_CATEGORIES}
             </span>
@@ -185,7 +187,7 @@ export default function CategoriesSettingsPage() {
             }`}
           >
             <Plus className="w-4 h-4" />
-            <span>New Category</span>
+            <span>{t('categories.newCategory')}</span>
           </button>
         </div>
       </div>
@@ -235,7 +237,7 @@ export default function CategoriesSettingsPage() {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>All</span>
+            <span>{t('categories.tabs.all')}</span>
             <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600">
               {categories.length}
             </span>
@@ -251,7 +253,7 @@ export default function CategoriesSettingsPage() {
             }`}
           >
             <ArrowDownCircle className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Expenses</span>
+            <span>{t('categories.tabs.expenses')}</span>
             <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-600">
               {expenseCount}
             </span>
@@ -267,7 +269,7 @@ export default function CategoriesSettingsPage() {
             }`}
           >
             <ArrowUpCircle className="w-3.5 h-3.5 text-teal-500" />
-            <span>Incomes</span>
+            <span>{t('categories.tabs.incomes')}</span>
             <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-teal-50 text-teal-600">
               {incomeCount}
             </span>
@@ -277,7 +279,7 @@ export default function CategoriesSettingsPage() {
         {/* Search input with accessible label */}
         <div className="relative w-full md:w-72">
           <label htmlFor="category-search" className="sr-only">
-            Search categories
+            {t('categories.searchLabel')}
           </label>
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
@@ -288,7 +290,7 @@ export default function CategoriesSettingsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search categories..."
+            placeholder={t('categories.searchPlaceholder')}
             className="w-full pl-9 pr-9 py-2 rounded-xl text-xs bg-white border border-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
           />
           {searchQuery && (
@@ -307,7 +309,7 @@ export default function CategoriesSettingsPage() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center p-16 bg-white border border-slate-200/80 rounded-3xl">
           <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
-          <p className="text-sm font-medium text-slate-500">Loading categories...</p>
+          <p className="text-sm font-medium text-slate-500">{t('categories.loading')}</p>
         </div>
       ) : filteredCategories.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-16 bg-white border border-dashed border-slate-200 rounded-3xl text-center">
@@ -316,13 +318,13 @@ export default function CategoriesSettingsPage() {
           </div>
           <h2 className="text-base font-bold text-slate-900 mb-1">
             {searchQuery
-              ? `No categories match "${searchQuery}"`
-              : 'No categories found'}
+              ? t('categories.noMatchTitle', { query: searchQuery })
+              : t('categories.empty.title')}
           </h2>
           <p className="text-xs text-slate-500 max-w-sm mb-5">
             {searchQuery
-              ? 'Try adjusting your search query or clear the filter to see all categories.'
-              : 'Create custom categories to organize and group your income and expense records.'}
+              ? t('categories.noMatchSubtitle')
+              : t('categories.emptySubtitle')}
           </p>
           {searchQuery ? (
             <button
@@ -330,7 +332,7 @@ export default function CategoriesSettingsPage() {
               onClick={() => setSearchQuery('')}
               className="px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
             >
-              Clear Search
+              {t('categories.clearSearch')}
             </button>
           ) : (
             <button
@@ -339,7 +341,7 @@ export default function CategoriesSettingsPage() {
               disabled={isQuotaReached}
               className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
             >
-              Add First Category
+              {t('categories.addFirst')}
             </button>
           )}
         </div>
@@ -363,8 +365,8 @@ export default function CategoriesSettingsPage() {
         onSuccess={() => {
           setSuccess(
             categoryToEdit
-              ? `Category "${categoryToEdit.name}" updated successfully.`
-              : 'New category created successfully.',
+              ? t('categories.updatedSuccess', { name: categoryToEdit.name })
+              : t('categories.createdSuccess'),
           );
           fetchCategories();
         }}
@@ -380,8 +382,8 @@ export default function CategoriesSettingsPage() {
                 <Trash2 className="w-5 h-5 text-rose-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Delete Category</h3>
-                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                <h3 className="text-base font-bold text-slate-900">{t('categories.deleteModal.title')}</h3>
+                <p className="text-xs text-slate-500">{t('categories.deleteModal.irreversible')}</p>
               </div>
             </div>
 
@@ -401,14 +403,13 @@ export default function CategoriesSettingsPage() {
                   {categoryToDelete.name}
                 </p>
                 <p className="text-xs text-slate-500">
-                  {categoryToDelete.type === 'INCOME' ? 'Income' : 'Expense'} Category
+                  {categoryToDelete.type === 'INCOME' ? t('categories.card.income') : t('categories.card.expense')}
                 </p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600">
-              Are you sure you want to delete this category? Only categories without
-              associated transactions can be deleted.
+              {t('categories.deleteModal.prompt')}
             </p>
 
             <div className="flex items-center justify-end space-x-2.5 pt-2">
@@ -418,7 +419,7 @@ export default function CategoriesSettingsPage() {
                 disabled={isDeleting}
                 className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -427,7 +428,7 @@ export default function CategoriesSettingsPage() {
                 className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-all shadow-xs disabled:opacity-50"
               >
                 {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{isDeleting ? 'Deleting...' : 'Delete Category'}</span>
+                <span>{isDeleting ? t('common.deleting') : t('categories.deleteModal.deleteButton')}</span>
               </button>
             </div>
           </div>

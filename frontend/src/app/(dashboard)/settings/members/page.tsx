@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 import {
   Users,
   UserPlus,
@@ -34,6 +35,8 @@ interface PendingInvitation {
 }
 
 export default function MembersSettingsPage() {
+  const { t } = useTranslation();
+  const { formatDate } = useFormatters();
   const { activeAccount } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
@@ -85,7 +88,7 @@ export default function MembersSettingsPage() {
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       });
 
-      setSuccess(`Invitation successfully sent to ${inviteEmail}.`);
+      setSuccess(t('members.inviteSuccess', { email: inviteEmail }));
       setInviteEmail('');
       setIsModalOpen(false);
       fetchMembers();
@@ -107,7 +110,7 @@ export default function MembersSettingsPage() {
         body: JSON.stringify({ role: newRole }),
       });
 
-      setSuccess('Member role updated successfully.');
+      setSuccess(t('members.roleUpdateSuccess'));
       fetchMembers();
     } catch (err: any) {
       setError(err.message || 'Failed to update member role.');
@@ -116,7 +119,7 @@ export default function MembersSettingsPage() {
 
   const handleRemoveMember = async (targetUserId: string, memberName: string) => {
     if (!activeAccount) return;
-    if (!confirm(`Are you sure you want to remove ${memberName} from this account?`)) {
+    if (!confirm(t('members.removePrompt', { name: memberName }))) {
       return;
     }
 
@@ -128,7 +131,7 @@ export default function MembersSettingsPage() {
         method: 'DELETE',
       });
 
-      setSuccess(`${memberName} was removed from the account.`);
+      setSuccess(t('members.removeSuccess', { name: memberName }));
       fetchMembers();
     } catch (err: any) {
       setError(err.message || 'Failed to remove member.');
@@ -142,9 +145,9 @@ export default function MembersSettingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Workspace Members</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('members.title')}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage who has access to <span className="font-semibold text-slate-800">{activeAccount?.name}</span>
+            {t('members.subtitle', { account: activeAccount?.name || '' })}
           </p>
         </div>
 
@@ -154,7 +157,7 @@ export default function MembersSettingsPage() {
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-600/20 active:scale-[0.98]"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Invite Member</span>
+            <span>{t('members.inviteMember')}</span>
           </button>
         )}
       </div>
@@ -178,14 +181,14 @@ export default function MembersSettingsPage() {
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-            Active Members ({members.length})
+            {t('members.activeMembers', { count: members.length })}
           </h2>
         </div>
 
         {isLoading ? (
           <div className="p-12 flex flex-col items-center justify-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-600" />
-            <p className="text-sm font-medium">Loading members...</p>
+            <p className="text-sm font-medium">{t('members.loading')}</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -222,8 +225,8 @@ export default function MembersSettingsPage() {
                       }
                       className="text-xs font-semibold rounded-lg border border-slate-200 bg-white py-1.5 px-2.5 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-600/20"
                     >
-                      <option value="MEMBER">Member</option>
-                      <option value="ADMINISTRATOR">Administrator</option>
+                      <option value="MEMBER">{t('members.roles.MEMBER')}</option>
+                      <option value="ADMINISTRATOR">{t('members.roles.ADMINISTRATOR')}</option>
                     </select>
                   ) : (
                     <span
@@ -233,7 +236,7 @@ export default function MembersSettingsPage() {
                           : 'bg-slate-100 text-slate-600'
                       }`}
                     >
-                      {member.role === 'ADMINISTRATOR' ? 'Admin' : 'Member'}
+                      {member.role === 'ADMINISTRATOR' ? t('members.roles.ADMINISTRATOR') : t('members.roles.MEMBER')}
                     </span>
                   )}
 
@@ -241,7 +244,7 @@ export default function MembersSettingsPage() {
                     <button
                       onClick={() => handleRemoveMember(member.userId, member.displayName)}
                       className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                      title="Remove member"
+                      title={t('members.revokePrompt', { name: member.displayName })}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -259,7 +262,7 @@ export default function MembersSettingsPage() {
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center">
               <Clock className="w-4 h-4 mr-2 text-slate-400" />
-              Pending Invitations ({invitations.length})
+              {t('members.pendingInvitations', { count: invitations.length })}
             </h2>
           </div>
 
@@ -272,16 +275,16 @@ export default function MembersSettingsPage() {
                 <div>
                   <p className="font-semibold text-slate-800">{inv.email}</p>
                   <p className="text-xs text-slate-400">
-                    Expires on {new Date(inv.expiresAt).toLocaleDateString()}
+                    {t('members.expiresOn', { date: formatDate(inv.expiresAt) })}
                   </p>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/50 uppercase">
-                    Role: {inv.role}
+                    {t('members.roleBadge', { role: t(`members.roles.${inv.role}` as any) })}
                   </span>
                   <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/50">
-                    Pending
+                    {t('members.pending')}
                   </span>
                 </div>
               </div>
@@ -299,7 +302,7 @@ export default function MembersSettingsPage() {
                 <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                   <UserPlus className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">Invite New Member</h3>
+                <h3 className="text-lg font-bold text-slate-900">{t('members.inviteModal.title')}</h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -312,7 +315,7 @@ export default function MembersSettingsPage() {
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
                 <label htmlFor="inviteEmail" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Email Address
+                  {t('members.inviteModal.emailLabel')}
                 </label>
                 <input
                   id="inviteEmail"
@@ -322,14 +325,14 @@ export default function MembersSettingsPage() {
                   required
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="partner@example.com"
+                  placeholder={t('members.inviteModal.emailPlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-sm text-slate-900 transition-all outline-hidden"
                 />
               </div>
 
               <div>
                 <label htmlFor="inviteRole" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Workspace Role
+                  {t('members.inviteModal.roleLabel')}
                 </label>
                 <select
                   id="inviteRole"
@@ -338,8 +341,8 @@ export default function MembersSettingsPage() {
                   onChange={(e) => setInviteRole(e.target.value as 'ADMINISTRATOR' | 'MEMBER')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 text-sm text-slate-900 transition-all outline-hidden"
                 >
-                  <option value="MEMBER">Member (Can manage expenses, cards, and categories)</option>
-                  <option value="ADMINISTRATOR">Administrator (Full control including members & deletion)</option>
+                  <option value="MEMBER">{t('members.inviteModal.memberOption')}</option>
+                  <option value="ADMINISTRATOR">{t('members.inviteModal.adminOption')}</option>
                 </select>
               </div>
 
@@ -349,7 +352,7 @@ export default function MembersSettingsPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -359,7 +362,7 @@ export default function MembersSettingsPage() {
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <span>Send Invitation</span>
+                    <span>{t('members.inviteModal.sendInvite')}</span>
                   )}
                 </button>
               </div>

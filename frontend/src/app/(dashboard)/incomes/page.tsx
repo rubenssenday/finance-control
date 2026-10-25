@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation, useFormatters } from '@/lib/i18n/i18n-context';
 import {
   IncomeModal,
   IncomeData,
@@ -35,6 +36,8 @@ interface DeleteModalState {
 
 export default function IncomesPage() {
   const { activeAccount } = useAuth();
+  const { t, locale } = useTranslation();
+  const { formatCurrency, formatDate } = useFormatters();
 
   // Current Month/Year Navigation State
   const currentDate = new Date();
@@ -130,8 +133,8 @@ export default function IncomesPage() {
 
   const monthName = useMemo(() => {
     const date = new Date(selectedYear, selectedMonth - 1, 1);
-    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  }, [selectedYear, selectedMonth]);
+    return formatDate(date, { month: 'long', year: 'numeric' });
+  }, [selectedYear, selectedMonth, formatDate]);
 
   // Aggregate Metrics for Selected Month
   const metrics = useMemo(() => {
@@ -162,26 +165,6 @@ export default function IncomesPage() {
       totalCount: incomes.length,
     };
   }, [incomes]);
-
-  const formatCurrency = (val: number | string) => {
-    const num = typeof val === 'number' ? val : Number(val) || 0;
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(num);
-  };
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const parts = dateStr.split('T')[0].split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return new Date(dateStr).toLocaleDateString('pt-BR');
-    } catch {
-      return dateStr;
-    }
-  };
 
   // Quick Toggle Status handler
   const handleToggleStatus = async (income: IncomeData) => {
@@ -229,12 +212,12 @@ export default function IncomesPage() {
         method: 'DELETE',
       });
 
-      setSuccess('Receita(s) excluída(s) com sucesso!');
+      setSuccess(t('incomes.deleteModal.success'));
       setTimeout(() => setSuccess(null), 4000);
       setDeleteModal({ isOpen: false, income: null, scope: 'SINGLE' });
       fetchIncomes();
     } catch (err: any) {
-      setError(err.message || 'Falha ao excluir receita.');
+      setError(err.message || t('common.error'));
     } finally {
       setIsDeleting(false);
     }
@@ -247,13 +230,13 @@ export default function IncomesPage() {
         <div>
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold tracking-wide uppercase mb-2">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Fluxo de Caixa</span>
+            <span>{t('common.appName')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Receitas & Entradas
+            {t('incomes.title')}
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Gerencie salários, honorários, rendimentos e projeções mensais recorrentes.
+            {t('incomes.subtitle')}
           </p>
         </div>
 
@@ -267,7 +250,7 @@ export default function IncomesPage() {
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-md shadow-emerald-600/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Receita</span>
+            <span>{t('incomes.newIncome')}</span>
           </button>
         </div>
       </div>
@@ -279,7 +262,7 @@ export default function IncomesPage() {
           <div className="flex items-center bg-white/10 rounded-2xl p-1 backdrop-blur-md">
             <button
               onClick={handlePrevMonth}
-              title="Mês Anterior"
+              title={t('common.back')}
               className="p-2 rounded-xl hover:bg-white/10 text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -289,7 +272,7 @@ export default function IncomesPage() {
             </span>
             <button
               onClick={handleNextMonth}
-              title="Próximo Mês"
+              title={t('common.confirm')}
               className="p-2 rounded-xl hover:bg-white/10 text-white transition-colors"
             >
               <ChevronRight className="w-5 h-5" />
@@ -300,7 +283,7 @@ export default function IncomesPage() {
             onClick={handleCurrentMonth}
             className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold backdrop-blur-md transition-colors"
           >
-            Hoje
+            {t('common.today')}
           </button>
         </div>
 
@@ -308,7 +291,7 @@ export default function IncomesPage() {
         <div className="flex items-center space-x-6 text-sm">
           <div>
             <span className="text-xs uppercase tracking-wider text-emerald-300 block font-medium">
-              Total Previsto no Mês
+              {t('incomes.metrics.monthTotal')}
             </span>
             <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
               {formatCurrency(metrics.total)}
@@ -323,7 +306,7 @@ export default function IncomesPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Total de Entradas
+              {t('incomes.metrics.totalExpected')}
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
@@ -333,7 +316,7 @@ export default function IncomesPage() {
             {formatCurrency(metrics.total)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {metrics.totalCount} {metrics.totalCount === 1 ? 'receita' : 'receitas'} neste mês
+            {t('incomes.metrics.recordsCount', { count: metrics.totalCount })}
           </p>
         </div>
 
@@ -341,7 +324,7 @@ export default function IncomesPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-              Recebido (Na Conta)
+              {t('incomes.metrics.liquidated')}
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
@@ -351,7 +334,7 @@ export default function IncomesPage() {
             {formatCurrency(metrics.received)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {metrics.receivedCount} de {metrics.totalCount} receitas liquidadas
+            {t('incomes.metrics.receivedCount', { received: metrics.receivedCount, total: metrics.totalCount })}
           </p>
         </div>
 
@@ -359,7 +342,7 @@ export default function IncomesPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-              Previsto (A Receber)
+              {t('incomes.metrics.pendingToReceive')}
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <Clock className="w-4 h-4" />
@@ -369,7 +352,7 @@ export default function IncomesPage() {
             {formatCurrency(metrics.pending)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {metrics.pendingCount} recebimentos em aberto
+            {t('incomes.metrics.pendingCount', { count: metrics.pendingCount })}
           </p>
         </div>
       </div>
@@ -402,7 +385,7 @@ export default function IncomesPage() {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Buscar por descrição ou observações..."
+            placeholder={t('incomes.filters.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-slate-400"
@@ -416,9 +399,9 @@ export default function IncomesPage() {
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
           >
-            <option value="ALL">Todos os Status</option>
-            <option value="RECEIVED">Recebido (Na Conta)</option>
-            <option value="PENDING">Previsto (A Receber)</option>
+            <option value="ALL">{t('incomes.filters.allStatuses')}</option>
+            <option value="RECEIVED">{t('incomes.status.RECEIVED')}</option>
+            <option value="PENDING">{t('incomes.status.PENDING')}</option>
           </select>
         </div>
       </div>
@@ -429,7 +412,7 @@ export default function IncomesPage() {
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
             <span className="text-sm font-semibold text-slate-500">
-              Carregando receitas do mês...
+              {t('common.loading')}
             </span>
           </div>
         ) : incomes.length === 0 ? (
@@ -438,10 +421,10 @@ export default function IncomesPage() {
               <TrendingUp className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900">
-              Nenhuma receita encontrada
+              {t('incomes.empty.title')}
             </h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-              Não há entradas cadastradas para o período de {monthName} com os filtros selecionados.
+              {t('incomes.empty.subtitle', { period: monthName })}
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <button
@@ -452,7 +435,7 @@ export default function IncomesPage() {
                 className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-md shadow-emerald-600/20"
               >
                 <Plus className="w-4 h-4" />
-                <span>Adicionar Receita</span>
+                <span>{t('incomes.newIncome')}</span>
               </button>
             </div>
           </div>
@@ -461,12 +444,12 @@ export default function IncomesPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 pl-6 pr-3">Data do Recebimento</th>
-                  <th className="py-3.5 px-3">Descrição</th>
-                  <th className="py-3.5 px-3">Categoria</th>
-                  <th className="py-3.5 px-3">Status</th>
-                  <th className="py-3.5 px-3 text-right">Valor</th>
-                  <th className="py-3.5 pl-3 pr-6 text-right">Ações</th>
+                  <th className="py-3.5 pl-6 pr-3">{t('incomes.table.receiptDate')}</th>
+                  <th className="py-3.5 px-3">{t('incomes.table.description')}</th>
+                  <th className="py-3.5 px-3">{t('incomes.table.category')}</th>
+                  <th className="py-3.5 px-3">{t('incomes.table.status')}</th>
+                  <th className="py-3.5 px-3 text-right">{t('incomes.table.amount')}</th>
+                  <th className="py-3.5 pl-3 pr-6 text-right">{t('incomes.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -496,7 +479,7 @@ export default function IncomesPage() {
                           {income.isRecurring && (
                             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                               <Repeat className="w-3 h-3" />
-                              <span>Fixa</span>
+                              <span>{t('incomes.table.fixed')}</span>
                             </span>
                           )}
                         </div>
@@ -524,7 +507,7 @@ export default function IncomesPage() {
                             <span>{income.category.name}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">Geral</span>
+                          <span className="text-xs text-slate-400">{t('incomes.table.generalCategory')}</span>
                         )}
                       </td>
 
@@ -533,7 +516,7 @@ export default function IncomesPage() {
                         <button
                           onClick={() => handleToggleStatus(income)}
                           disabled={isUpdatingThis}
-                          title="Clique para alternar o status do recebimento"
+                          title={locale === 'pt-BR' ? 'Alternar status' : 'Toggle status'}
                           className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
                             income.status === 'RECEIVED'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
@@ -548,7 +531,7 @@ export default function IncomesPage() {
                             <Clock className="w-3.5 h-3.5 text-amber-600" />
                           )}
                           <span>
-                            {income.status === 'RECEIVED' ? 'Recebido' : 'Previsto'}
+                            {income.status === 'RECEIVED' ? t('incomes.status.RECEIVED') : t('incomes.status.PENDING')}
                           </span>
                         </button>
                       </td>
@@ -568,14 +551,14 @@ export default function IncomesPage() {
                               setIncomeToEdit(income);
                               setIsIncomeModalOpen(true);
                             }}
-                            title="Editar receita"
+                            title={t('incomes.table.editTooltip')}
                             className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => promptDelete(income)}
-                            title="Excluir receita"
+                            title={t('incomes.table.deleteTooltip')}
                             className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -600,20 +583,15 @@ export default function IncomesPage() {
                 <Trash2 className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-bold text-slate-900">
-                Confirmar Exclusão
+                {t('incomes.deleteModal.title')}
               </h3>
             </div>
 
             <p className="text-sm text-slate-600">
-              Tem certeza que deseja excluir a receita{' '}
-              <strong className="text-slate-900">
-                &ldquo;{deleteModal.income.description}&rdquo;
-              </strong>{' '}
-              no valor de{' '}
-              <strong className="text-emerald-600 font-bold">
-                {formatCurrency(deleteModal.income.amount)}
-              </strong>
-              ?
+              {t('incomes.deleteModal.prompt', {
+                description: deleteModal.income.description,
+                amount: formatCurrency(deleteModal.income.amount),
+              })}
             </p>
 
             {/* Scope Selection for Recurring Incomes */}
@@ -621,7 +599,7 @@ export default function IncomesPage() {
               deleteModal.income.incomeRecurrenceRuleId) && (
               <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
                 <span className="text-xs font-bold text-slate-700 block uppercase tracking-wider">
-                  Escopo da Exclusão
+                  {t('incomes.deleteModal.scopeTitle')}
                 </span>
                 <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
                   <input
@@ -633,7 +611,7 @@ export default function IncomesPage() {
                     }
                     className="text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span>Excluir apenas esta receita deste mês</span>
+                  <span>{t('incomes.deleteModal.scopeSingle')}</span>
                 </label>
                 <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
                   <input
@@ -645,7 +623,7 @@ export default function IncomesPage() {
                     }
                     className="text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span>Excluir esta e todas as receitas futuras da série</span>
+                  <span>{t('incomes.deleteModal.scopeFuture')}</span>
                 </label>
               </div>
             )}
@@ -659,7 +637,7 @@ export default function IncomesPage() {
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -668,7 +646,7 @@ export default function IncomesPage() {
                 className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-all shadow-md shadow-rose-600/20 disabled:opacity-50"
               >
                 {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Excluir</span>
+                <span>{t('common.delete')}</span>
               </button>
             </div>
           </div>
@@ -681,7 +659,7 @@ export default function IncomesPage() {
         onClose={() => setIsIncomeModalOpen(false)}
         onSuccess={() => {
           fetchIncomes();
-          setSuccess('Receita salva com sucesso!');
+          setSuccess(t('incomes.deleteModal.savedSuccess'));
           setTimeout(() => setSuccess(null), 4000);
         }}
         incomeToEdit={incomeToEdit}

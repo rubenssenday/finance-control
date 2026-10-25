@@ -22,7 +22,7 @@ async function bootstrap() {
     origin: [frontendUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Account-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Account-Id', 'Accept-Language'],
   });
 
   // Global API version prefix

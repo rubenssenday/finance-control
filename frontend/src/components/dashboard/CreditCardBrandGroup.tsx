@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreditCardsBlock, BrandGroupCard } from './dashboard-types';
-import { formatCurrencyBRL, formatDateBRL } from '@/lib/export-utils';
+import { CreditCardsBlock } from './dashboard-types';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import { CategoryIcon } from '../categories/CategoryIcon';
 import {
   CreditCard,
@@ -29,6 +29,7 @@ export function CreditCardBrandGroup({
   onReopenInvoice,
   isLoading,
 }: CreditCardBrandGroupProps) {
+  const { t, formatCurrency, formatDate } = useTranslation();
   // Track open cards by ID: by default open the first card
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
 
@@ -55,9 +56,9 @@ export function CreditCardBrandGroup({
         <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
           <CreditCard className="w-6 h-6" />
         </div>
-        <h3 className="text-base font-bold text-slate-900">Nenhum Cartão de Crédito Ativo</h3>
+        <h3 className="text-base font-bold text-slate-900">{t('dashboard.creditCardsBlock.empty')}</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-          Cadastre seus cartões de crédito na aba Cartões para visualizar faturas consolidadas por bandeira aqui.
+          {t('cards.subtitle')}
         </p>
       </div>
     );
@@ -110,28 +111,28 @@ export function CreditCardBrandGroup({
         return (
           <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Fatura Paga</span>
+            <span>{t('dashboard.creditCardsBlock.invoicePaid')}</span>
           </span>
         );
       case 'CLOSED':
         return (
           <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
             <Clock className="w-3.5 h-3.5" />
-            <span>Fechada (A Pagar)</span>
+            <span>{t('dashboard.creditCardsBlock.invoiceClosed')}</span>
           </span>
         );
       case 'OVERDUE':
         return (
           <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>Fatura Vencida</span>
+            <span>{t('dashboard.creditCardsBlock.invoiceOverdue')}</span>
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
             <Clock className="w-3.5 h-3.5" />
-            <span>Fatura em Aberto</span>
+            <span>{t('dashboard.creditCardsBlock.invoiceOpen')}</span>
           </span>
         );
     }
@@ -144,13 +145,13 @@ export function CreditCardBrandGroup({
         <div>
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold tracking-wide uppercase mb-1">
             <CreditCard className="w-3.5 h-3.5" />
-            <span>Bloco 1: Cartões de Crédito</span>
+            <span>{t('dashboard.creditCardsBlock.badge')}</span>
           </div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Faturas por Bandeira
+            {t('dashboard.creditCardsBlock.title')}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Consolidação por rede e detalhamento de compras incluídas no ciclo mensal.
+            {t('dashboard.creditCardsBlock.subtitle')}
           </p>
         </div>
 
@@ -158,10 +159,10 @@ export function CreditCardBrandGroup({
         <div className="flex items-center space-x-3 text-right">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-              Total em Faturas
+              {t('dashboard.creditCardsBlock.brandLiability')}
             </span>
             <span className="text-lg font-black text-slate-900">
-              {formatCurrencyBRL(creditCards.totalLiability)}
+              {formatCurrency(creditCards.totalLiability)}
             </span>
           </div>
         </div>
@@ -179,12 +180,14 @@ export function CreditCardBrandGroup({
               <div className="flex items-center space-x-3">
                 {getBrandBadge(group.brand, group.brandName)}
                 <span className="text-xs font-semibold text-slate-500">
-                  {group.cardCount} {group.cardCount === 1 ? 'cartão' : 'cartões'}
+                  {group.cardCount === 1
+                    ? t('dashboard.creditCardsBlock.cardCountOne', { count: group.cardCount })
+                    : t('dashboard.creditCardsBlock.cardCountOther', { count: group.cardCount })}
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-sm font-extrabold text-slate-900">
-                  {formatCurrencyBRL(group.totalAmount)}
+                  {formatCurrency(group.totalAmount)}
                 </span>
               </div>
             </div>
@@ -207,7 +210,11 @@ export function CreditCardBrandGroup({
                         <button
                           onClick={() => toggleCard(card.cardId)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
-                          title={isExpanded ? 'Recolher compras' : 'Ver compras detalhadas'}
+                          title={
+                            isExpanded
+                              ? t('dashboard.creditCardsBlock.collapsePurchases')
+                              : t('dashboard.creditCardsBlock.expandPurchases')
+                          }
                         >
                           {isExpanded ? (
                             <ChevronDown className="w-4 h-4 text-indigo-600" />
@@ -221,13 +228,13 @@ export function CreditCardBrandGroup({
                             {card.nickname}
                           </h4>
                           <div className="flex items-center space-x-3 text-[11px] text-slate-500 mt-0.5">
-                            <span>Fecha dia {card.closingDay}</span>
+                            <span>{t('cards.cardSummary.closingDayLabel', { day: card.closingDay })}</span>
                             <span>•</span>
-                            <span>Vence dia {card.dueDay}</span>
+                            <span>{t('cards.cardSummary.dueDayLabel', { day: card.dueDay })}</span>
                             {invoice && (
                               <>
                                 <span>•</span>
-                                <span>Vencimento: {formatDateBRL(invoice.dueDate)}</span>
+                                <span>{t('dashboard.creditCardsBlock.dueDate')}: {formatDate(invoice.dueDate)}</span>
                               </>
                             )}
                           </div>
@@ -241,7 +248,7 @@ export function CreditCardBrandGroup({
                             {getInvoiceStatusBadge(invoice.status)}
 
                             <span className="text-base font-extrabold text-slate-900">
-                              {formatCurrencyBRL(invoice.totalAmount)}
+                              {formatCurrency(invoice.totalAmount)}
                             </span>
 
                             {invoice.status === 'PAID' ? (
@@ -259,7 +266,7 @@ export function CreditCardBrandGroup({
                                 className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-rose-600 transition-colors"
                               >
                                 <RotateCcw className="w-3.5 h-3.5" />
-                                <span>Reabrir</span>
+                                <span>{t('dashboard.creditCardsBlock.reopenInvoice')}</span>
                               </button>
                             ) : (
                               <button
@@ -276,12 +283,12 @@ export function CreditCardBrandGroup({
                                 className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs shadow-indigo-600/20 transition-all"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Pagar</span>
+                                <span>{t('dashboard.creditCardsBlock.payInvoice')}</span>
                               </button>
                             )}
                           </>
                         ) : (
-                          <span className="text-xs text-slate-400">Sem fatura ativa</span>
+                          <span className="text-xs text-slate-400">{t('common.emptyState')}</span>
                         )}
                       </div>
                     </div>
@@ -294,11 +301,11 @@ export function CreditCardBrandGroup({
                             <table className="w-full text-left text-xs">
                               <thead>
                                 <tr className="border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                  <th className="py-2 px-3">Data Compra</th>
-                                  <th className="py-2 px-3">Descrição</th>
-                                  <th className="py-2 px-3">Categoria</th>
-                                  <th className="py-2 px-3">Parcela</th>
-                                  <th className="py-2 px-3 text-right">Valor</th>
+                                  <th className="py-2 px-3">{t('dashboard.creditCardsBlock.purchaseDate')}</th>
+                                  <th className="py-2 px-3">{t('common.description')}</th>
+                                  <th className="py-2 px-3">{t('common.category')}</th>
+                                  <th className="py-2 px-3">{t('dashboard.creditCardsBlock.installmentColumn')}</th>
+                                  <th className="py-2 px-3 text-right">{t('common.amount')}</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -308,7 +315,7 @@ export function CreditCardBrandGroup({
                                     className="hover:bg-slate-100/50 transition-colors"
                                   >
                                     <td className="py-2.5 px-3 whitespace-nowrap text-slate-500 font-medium">
-                                      {formatDateBRL(item.transactionDate)}
+                                      {formatDate(item.transactionDate)}
                                     </td>
                                     <td className="py-2.5 px-3 font-semibold text-slate-900">
                                       {item.description}
@@ -328,7 +335,7 @@ export function CreditCardBrandGroup({
                                           <span>{item.category.name}</span>
                                         </div>
                                       ) : (
-                                        <span className="text-slate-400">Geral</span>
+                                        <span className="text-slate-400">{t('expenses.table.generalCategory')}</span>
                                       )}
                                     </td>
                                     <td className="py-2.5 px-3 whitespace-nowrap">
@@ -340,11 +347,11 @@ export function CreditCardBrandGroup({
                                           </span>
                                         </span>
                                       ) : (
-                                        <span className="text-slate-400 text-[11px]">À vista</span>
+                                        <span className="text-slate-400 text-[11px]">{t('dashboard.creditCardsBlock.oneTime')}</span>
                                       )}
                                     </td>
                                     <td className="py-2.5 px-3 text-right whitespace-nowrap font-bold text-slate-900">
-                                      {formatCurrencyBRL(item.amount)}
+                                      {formatCurrency(item.amount)}
                                     </td>
                                   </tr>
                                 ))}
@@ -353,7 +360,7 @@ export function CreditCardBrandGroup({
                           </div>
                         ) : (
                           <p className="text-xs text-slate-500 text-center py-2">
-                            Nenhum lançamento registrado nesta fatura para o mês selecionado.
+                            {t('dashboard.creditCardsBlock.emptyPurchases')}
                           </p>
                         )}
                       </div>

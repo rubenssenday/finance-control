@@ -143,6 +143,14 @@ Across all profiles, users review personal and shared finances weekly or during 
 - As a user, I want to see a top-level monthly financial summary showing Total Income, Total Expenses (split by Paid and Pending), and Projected Net Balance so that I know our net cash position.
 - As a user, I want visual status badges (Green for Paid, Yellow for Pending, Red for Overdue) on all expenses and invoices for instant scanning.
 
+### F08. Internationalization and Localization Architecture (i18n / pt-BR)
+- As a user, I want all user interface labels, buttons, navigation menus, and system messages displayed in Brazilian Portuguese (pt-BR) by default so that the application is natural and accessible to use.
+- As a user, I want all dates formatted as DD/MM/YYYY (e.g., 24/10/2026), months formatted in Portuguese (e.g., out/2026), and times formatted in 24-hour notation (HH:mm) so that financial timelines match Brazilian conventions.
+- As a user, I want monetary values displayed using Brazilian Real currency notation (R$ 1.250,50) with period thousands separators and comma decimal separators across all cards, invoices, expenses, incomes, and summaries.
+- As a user, I want to change my preferred language via a locale switcher in the header or account settings, with my selection persisting across browser sessions.
+- As a developer / administrator, I want locale dictionaries decoupled into structured translation bundles (e.g., pt-BR, en-US) so that new languages can be added seamlessly without modifying component business logic.
+- As a client consuming the API, I want backend validation errors and response messages translated according to the `Accept-Language` header while preserving immutable machine-readable error codes.
+
 ## 6. Functionalities
 
 ### F01. Foundation Architecture, Multi-Provider Authentication, and Account Workspaces
@@ -366,6 +374,50 @@ Across all profiles, users review personal and shared finances weekly or during 
 - If a card brand has multiple active cards (e.g., two Visa cards), the brand header aggregates the sum of both cards and allows individual card accordion expansion.
 - Mobile view stacks Block 1 (Credit Cards) and Block 2 (Other Expenses) vertically with sticky month navigation at the screen top.
 
+### F08. Internationalization and Localization Architecture (i18n / pt-BR)
+
+**Consumes:**
+- F01: session context and responsive layout shell.
+
+**Provides:**
+- Locale configuration, translation catalog provider (`t` function, namespace dictionaries), formatting utilities (`formatCurrency`, `formatDate`, `formatTime`), and localized API error handler (used by F01, F02, F03, F04, F05, F06, F07).
+
+**Core Scope:**
+- Default active locale: Brazilian Portuguese (`pt-BR`).
+- Locale detection and persistence:
+  - Resolution order: `NEXT_LOCALE` cookie $\rightarrow$ `localStorage` preference $\rightarrow$ browser `Accept-Language` header / `navigator.language` $\rightarrow$ fallback to `pt-BR`.
+  - Header / Settings locale switcher allowing instant switching between available locales (`pt-BR`, `en-US`).
+- Complete UI string externalization into modular JSON translation bundles (`locales/pt-BR.json`, `locales/en-US.json`) with type-safe key indexing and interpolation support.
+- Centralized formatting utilities using standard ECMAScript Internationalization API (`Intl.NumberFormat`, `Intl.DateTimeFormat`) configured for the active locale:
+  - Currency: `pt-BR` formats as `R$ 1.250,50` (symbol prefix `R$`, space, period thousands separator, comma decimal separator).
+  - Dates: Standard numeric `DD/MM/YYYY` (e.g., `24/10/2026`), short month `mmm/yyyy` (e.g., `out/2026`), and full date strings (`24 de outubro de 2026`).
+  - Times: 24-hour notation `HH:mm` (e.g., `14:30`) and timestamps `DD/MM/YYYY HH:mm`.
+- Backend localized error responses: API middleware inspects request `Accept-Language` header, looks up the localized message from the message catalog corresponding to the error code, and returns `{ error: { code: "EXP001", message: "Descrição é obrigatória" } }`. Database enums and internal error codes remain immutable English identifiers.
+
+**Full Scope additions:**
+- User account persistent locale preference stored in user profile database record.
+- Additional language bundles (e.g., Spanish `es-ES`, European Portuguese `pt-PT`).
+- Number parsing utility allowing input of localized decimal strings (e.g., parsing `"1.250,50"` into `1250.50`).
+
+**Capabilities:**
+- Supported locales: `pt-BR` (default), `en-US`.
+- Fallback locale: `pt-BR` (if translation key or unsupported locale requested).
+- Missing key handling: Graceful fallback to `en-US` bundle, then returning the raw translation key in development without crashing UI components.
+- Zero layout shift during locale switching.
+- Preserves exact numeric precision during currency formatting (integer cents converted via $\text{cents} / 100$).
+
+**Experience:**
+- All dashboard metrics, card liabilities, transaction lists, modals, and toast messages immediately display in Brazilian Portuguese.
+- Dates across invoice headers, transactions, and filters show `DD/MM/AAAA` (e.g., "15/10/2026").
+- Currency inputs and display values display `R$ 0,00`.
+- The top header or profile menu includes a discreet locale indicator dropdown (e.g., language code `PT-BR` / `EN-US`).
+- Selecting a new language updates all UI strings and formatting instantly without requiring a full page re-authentication.
+
+**Error Handling:**
+- Unsupported Locale Requested: Falls back silently to `pt-BR` and logs a debug notice.
+- Missing Translation Key: Renders key path fallback and reports missing translation key to client logger.
+- Invalid Locale Date Parse: Gracefully falls back to ISO string display without breaking render tree.
+
 ## 7. Out of Scope
 
 **Automated Bank Synchronization and Open Finance**
@@ -401,6 +453,7 @@ Across all profiles, users review personal and shared finances weekly or during 
 | F05 | Income Tracking and Cash Flow Entry | 2 | F01, F02 |
 | F06 | Expense Settlement and Invoice Payment | 1 | F01, F03, F04 |
 | F07 | Monthly Expense Grouping and Analytics Dashboard | 1 | F01, F03, F04, F05, F06 |
+| F08 | Internationalization and Localization Architecture (i18n / pt-BR) | 1 | F01 |
 
 ### Part 2: Foundation Features
 These features set up shared project infrastructure. In a greenfield project they must be implemented sequentially before or alongside any feature that depends on them:
@@ -416,6 +469,7 @@ Features within the same wave can be built in parallel. A wave starts only after
 - **Wave 3**: F04, F05
 - **Wave 4**: F06
 - **Wave 5**: F07
+- **Wave 6**: F08
 
 ### Part 4: Priority Legend
 - **1** = Essential — product does not work without it
@@ -441,6 +495,7 @@ graph TD
   F04 --> F07
   F05 --> F07
   F06 --> F07
+  F01 --> F08[i18n & Localization]
 ```
 
 ## 9. Acceptance Criteria
@@ -496,9 +551,20 @@ graph TD
 - [ ] "Other Expenses" block displays sub-groupings for Boleto, Pix, and Debit with respective pending and paid totals.
 - [ ] Financial summary header displays Total Income, Total Expenses, Total Paid, Total Pending, and Projected Net Balance ($\text{Income} - \text{Expenses}$).
 
+### F08. Internationalization and Localization Architecture (i18n / pt-BR)
+- [ ] Application loads in Brazilian Portuguese (`pt-BR`) by default for all UI labels, navigation links, buttons, and notifications.
+- [ ] Currency formatting renders Brazilian Real standard (`R$ 1.250,50`) with comma decimal separator and period thousands separator.
+- [ ] Dates render in `DD/MM/YYYY` format (e.g., `24/10/2026`) and months render in localized Portuguese short form (e.g., `out/2026`).
+- [ ] Timestamps and times render in 24-hour format (`HH:mm`).
+- [ ] User can switch active locale between `pt-BR` and `en-US` via the UI switcher, updating all displayed text and formats without layout breakages.
+- [ ] Active locale persists across page reloads via cookie (`NEXT_LOCALE`) or local storage.
+- [ ] Translation dictionaries are separated into modular JSON files (`locales/pt-BR.json`, `locales/en-US.json`) with fallback to default locale when a key is missing.
+- [ ] Backend API endpoints localize error messages based on the `Accept-Language` header while keeping error codes (e.g., `EXP001`) unchanged.
+
 ### Cross-Feature Integration
 - [ ] Category definitions created in F02 appear in expense creation dropdowns (F04) and income creation dropdowns (F05).
 - [ ] Credit card definitions and generated invoice cycles created in F03 are available for selection in expense entry (F04) and display in settlement flows (F06).
 - [ ] Installment expenses generated by the recurrence engine (F04) correctly populate the target credit card invoices (F03) and are aggregated in the monthly dashboard (F07).
 - [ ] Settlement of cash expenses and full-invoice credit card payments executed in F06 updates paid/pending calculations in the dashboard (F07).
 - [ ] Incomes recorded in F05 dynamically feed into the top-level financial summary calculations displayed in F07.
+- [ ] All UI strings and date/currency formats across F01 (Auth & Layout), F02 (Categories), F03 (Cards & Invoices), F04 (Expenses), F05 (Incomes), F06 (Settlement), and F07 (Dashboard) are dynamically localized through the F08 i18n architecture.

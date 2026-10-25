@@ -7,10 +7,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { I18nService } from '../i18n/i18n.service';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
+  private readonly i18n = new I18nService();
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -38,6 +40,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = exception.message;
     }
 
+    const acceptLanguage = request.headers['accept-language'] as string | undefined;
+    const localizedMessage = this.i18n.translate(code, message, acceptLanguage);
+
     if (status >= 500) {
       this.logger.error(
         `[${request.method}] ${request.url} - Error: ${message}`,
@@ -51,7 +56,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status: 'error',
       statusCode: status,
       code,
-      message,
+      message: localizedMessage,
       timestamp: new Date().toISOString(),
       path: request.url,
     });

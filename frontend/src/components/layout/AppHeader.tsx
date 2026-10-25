@@ -3,11 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useTranslation } from '@/lib/i18n/i18n-context';
 import { AccountSwitcher } from './AccountSwitcher';
+import { LocaleSwitcher } from './LocaleSwitcher';
 import { WalletCards, LogOut, Users, Settings, Tags, CreditCard, Receipt, TrendingUp } from 'lucide-react';
 
 export function AppHeader() {
   const { user, activeAccount, logout } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
@@ -19,7 +22,7 @@ export function AppHeader() {
               <WalletCards className="w-5 h-5" />
             </div>
             <span className="font-extrabold text-lg text-slate-900 tracking-tight hidden sm:inline-block">
-              Financial Control
+              {t('common.appName')}
             </span>
           </Link>
 
@@ -38,7 +41,7 @@ export function AppHeader() {
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
                 <Receipt className="w-4 h-4 text-slate-400" />
-                <span className="hidden md:inline">Expenses</span>
+                <span className="hidden md:inline">{t('nav.expenses')}</span>
               </Link>
 
               <Link
@@ -46,7 +49,7 @@ export function AppHeader() {
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <span className="hidden md:inline">Incomes</span>
+                <span className="hidden md:inline">{t('nav.incomes')}</span>
               </Link>
 
               <Link
@@ -54,7 +57,7 @@ export function AppHeader() {
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
                 <CreditCard className="w-4 h-4 text-slate-400" />
-                <span className="hidden md:inline">Cards</span>
+                <span className="hidden md:inline">{t('nav.cards')}</span>
               </Link>
 
               <Link
@@ -62,7 +65,7 @@ export function AppHeader() {
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
                 <Tags className="w-4 h-4 text-slate-400" />
-                <span className="hidden md:inline">Categories</span>
+                <span className="hidden md:inline">{t('nav.categories')}</span>
               </Link>
 
               <Link
@@ -70,10 +73,13 @@ export function AppHeader() {
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
                 <Users className="w-4 h-4 text-slate-400" />
-                <span className="hidden md:inline">Members</span>
+                <span className="hidden md:inline">{t('nav.members')}</span>
               </Link>
             </>
           )}
+
+          {/* Locale Switcher */}
+          <LocaleSwitcher />
 
           {user && (
             <div className="flex items-center space-x-3 pl-2 border-l border-slate-200">
@@ -96,7 +102,7 @@ export function AppHeader() {
 
               <button
                 onClick={logout}
-                title="Log out"
+                title={t('nav.logout')}
                 className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
