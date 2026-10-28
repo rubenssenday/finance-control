@@ -21,6 +21,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
+import { getAuthCookieOptions } from '../../common/utils/cookie.util';
 
 @Controller('accounts')
 @UseGuards(JwtAuthGuard)
@@ -45,14 +46,14 @@ export class AccountsController {
   ) {
     const activeAccount = await this.accountsService.switchAccount(user.id, accountId);
 
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('active_account_id', activeAccount.id, {
-      httpOnly: false, // Accessible to client for active header synchronization
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
+    res.cookie(
+      'active_account_id',
+      activeAccount.id,
+      getAuthCookieOptions({
+        httpOnly: false, // Accessible to client for active header synchronization
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      }),
+    );
 
     return {
       status: 'success',

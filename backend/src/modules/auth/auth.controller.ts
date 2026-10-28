@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { getAuthCookieOptions, clearAuthCookie } from '../../common/utils/cookie.util';
 
 @Controller('auth')
 export class AuthController {
@@ -59,11 +60,15 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: any, @Res() res: Response) {
-    const result = await this.authService.loginWithGoogle(req.user);
-    this.setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
-
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/`);
+    try {
+      const result = await this.authService.loginWithGoogle(req.user);
+      this.setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+      return res.redirect(`${frontendUrl}/`);
+    } catch (error: any) {
+      const errorMessage = encodeURIComponent(error?.message || 'Google authentication failed');
+      return res.redirect(`${frontendUrl}/login?error=${errorMessage}`);
+    }
   }
 
   @Post('refresh')
@@ -87,8 +92,8 @@ export class AuthController {
     const refreshToken = req.cookies ? req.cookies['refresh_token'] : undefined;
     await this.authService.logout(refreshToken);
 
-    res.clearCookie('access_token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/' });
+    clearAuthCookie(res, 'access_token');
+    clearAuthCookie(res, 'refresh_token');
 
     return {
       status: 'success',
@@ -108,25 +113,22 @@ export class AuthController {
   }
 
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    const isHttps =
-      process.env.COOKIE_SECURE === 'true' ||
-      (process.env.NODE_ENV === 'production' &&
-        (process.env.FRONTEND_URL?.startsWith('https') ?? false));
+    res.cookie(
+      'access_token',
+      accessToken,
+      getAuthCookieOptions({
+        httpOnly: true,
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      }),
+    );
 
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: isHttps,
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-      path: '/',
-    });
-
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: isHttps,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
-    });
+    res.cookie(
+      'refresh_token',
+      refreshToken,
+      getAuthCookieOptions({
+        httpOnly: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      }),
+    );
   }
 }

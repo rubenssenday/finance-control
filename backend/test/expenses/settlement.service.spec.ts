@@ -80,9 +80,9 @@ describe('ExpensesService - settleExpense', () => {
       amount: 99.9,
       paymentMethod: PaymentMethod.PIX,
       paymentStatus: PaymentStatus.PAID,
-      paidAt: new Date('2026-10-20T10:00:00.000Z'),
-      dueDate: new Date('2026-10-25T00:00:00.000Z'),
-      updatedAt: new Date('2026-10-20T10:00:00.000Z'),
+      paidAt: new Date(),
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(),
     };
     prisma.expense.findFirst.mockResolvedValue(existingExpense);
     prisma.expense.update.mockImplementation(({ data }: any) => ({

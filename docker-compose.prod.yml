@@ -14,6 +14,7 @@ services:
       # Conecta à mesma instância do Postgres já existente na rede (serviço/container 'postgresql')
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgresql}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-financial_v2_db}?schema=public"
       FRONTEND_URL: "https://${NEW_WEB_DOMAIN:?NEW_WEB_DOMAIN is required}"
+      COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
       JWT_ACCESS_SECRET: "${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}"
       JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}"
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
