@@ -1,0 +1,87 @@
+services:
+  # ==========================================
+  # 1. Backend API (NestJS + Prisma)
+  # ==========================================
+  backend-v2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: "${BACKEND_CONTAINER_NAME:-financial_v2_backend}"
+    restart: always
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      # Conecta à mesma instância do Postgres já existente na rede (serviço/container 'postgresql')
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgresql}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-financial_v2_db}?schema=public"
+      FRONTEND_URL: "https://${NEW_WEB_DOMAIN:?NEW_WEB_DOMAIN is required}"
+      JWT_ACCESS_SECRET: "${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}"
+      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      GOOGLE_CALLBACK_URL: "https://${NEW_API_DOMAIN:?NEW_API_DOMAIN is required}/api/v1/auth/google/callback"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${EXTERNAL_NETWORK:-internal_net}"
+      - "traefik.http.routers.financial_v2_api.rule=Host(`${NEW_API_DOMAIN}`)"
+      - "traefik.http.routers.financial_v2_api.entrypoints=websecure"
+      - "traefik.http.routers.financial_v2_api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      - "traefik.http.services.financial_v2_api.loadbalancer.server.port=3001"
+    networks:
+      - internal_net
+
+  # ==========================================
+  # 2. Frontend Web (Next.js Standalone)
+  # ==========================================
+  frontend-v2:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://${NEW_API_DOMAIN:?NEW_API_DOMAIN is required}/api/v1"
+    container_name: "${FRONTEND_CONTAINER_NAME:-financial_v2_frontend}"
+    restart: always
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "https://${NEW_API_DOMAIN}/api/v1"
+    depends_on:
+      - backend-v2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${EXTERNAL_NETWORK:-internal_net}"
+      - "traefik.http.routers.financial_v2_web.rule=Host(`${NEW_WEB_DOMAIN}`)"
+      - "traefik.http.routers.financial_v2_web.entrypoints=websecure"
+      - "traefik.http.routers.financial_v2_web.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      - "traefik.http.services.financial_v2_web.loadbalancer.server.port=3000"
+    networks:
+      - internal_net
+
+  # ==========================================
+  # 3. Automated Database Backup (Opcional para o V2)
+  # ==========================================
+  db-backup-v2:
+    image: prodrigestivill/postgres-backup-local:16-alpine
+    container_name: "${BACKUP_CONTAINER_NAME:-financial_v2_db_backup}"
+    restart: always
+    user: root
+    environment:
+      POSTGRES_HOST: "${POSTGRES_HOST:-postgresql}"
+      POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
+      POSTGRES_DB: "${POSTGRES_DB:-financial_v2_db}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      SCHEDULE: "${BACKUP_SCHEDULE:-@daily}"
+      BACKUP_KEEP_DAYS: "${BACKUP_KEEP_DAYS:-7}"
+      BACKUP_SUFFIX: .sql
+    volumes:
+      - "${BACKUP_DATA_PATH:-./backups_v2}:/backups"
+    networks:
+      - internal_net
+
+# ==========================================
+# Shared External Network (Traefik + PostgreSQL)
+# ==========================================
+networks:
+  internal_net:
+    external: true
+    name: "${EXTERNAL_NETWORK:-internal_net}"
