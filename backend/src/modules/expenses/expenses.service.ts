@@ -173,6 +173,27 @@ export class ExpensesService {
 
     // Flow 1: Recurring monthly expense
     if (dto.isRecurring) {
+      if (dto.paymentMethod === PaymentMethod.CREDIT_CARD) {
+        if (!dto.cardId) {
+          throw new BadRequestException({
+            code: 'EXP004',
+            message:
+              'Credit card payment method requires a valid cardId belonging to this account.',
+          });
+        }
+
+        const card = await this.prisma.creditCard.findFirst({
+          where: { id: dto.cardId, accountId },
+        });
+
+        if (!card) {
+          throw new BadRequestException({
+            code: 'EXP004',
+            message: 'Selected credit card not found in this account.',
+          });
+        }
+      }
+
       const dayOfMonth = txDate.getUTCDate();
       const rule = await this.recurrenceService.createRuleAndMaterialize({
         accountId,
@@ -400,7 +421,22 @@ export class ExpensesService {
       dataToUpdate.description = dto.description.trim();
     }
     if (dto.amount !== undefined) {
-      dataToUpdate.amount = new Prisma.Decimal(dto.amount.toFixed(2));
+      const newAmount = new Prisma.Decimal(dto.amount.toFixed(2));
+      dataToUpdate.amount = newAmount;
+      if (expense.invoiceId) {
+        const oldAmount = new Prisma.Decimal(expense.amount.toString());
+        const diff = newAmount.sub(oldAmount);
+        if (!diff.isZero()) {
+          await this.prisma.invoice.update({
+            where: { id: expense.invoiceId },
+            data: {
+              totalAmount: {
+                increment: diff,
+              },
+            },
+          });
+        }
+      }
     }
     if (dto.paymentStatus) {
       dataToUpdate.paymentStatus = dto.paymentStatus;

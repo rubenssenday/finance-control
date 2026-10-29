@@ -151,6 +151,50 @@ describe('ExpensesService', () => {
     });
   });
 
+  describe('create - Recurring Expenses', () => {
+    it('should validate credit card and delegate to recurrenceService when isRecurring is true', async () => {
+      prisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Services' });
+      prisma.creditCard.findFirst.mockResolvedValue({ id: 'card-1', closingDay: 10, dueDay: 18 });
+      recurrenceService.createRuleAndMaterialize.mockResolvedValue({
+        id: 'rule-netflix',
+        description: 'Netflix',
+        amount: new Prisma.Decimal('55.90'),
+      });
+
+      const result = await service.create('acc-1', {
+        description: 'Netflix',
+        amount: 55.9,
+        transactionDate: '2026-10-10T00:00:00.000Z',
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+        categoryId: 'cat-1',
+        cardId: 'card-1',
+        isRecurring: true,
+      });
+
+      expect(result.isRecurring).toBe(true);
+      expect(result.recurrenceRuleId).toBe('rule-netflix');
+      expect(prisma.creditCard.findFirst).toHaveBeenCalledWith({
+        where: { id: 'card-1', accountId: 'acc-1' },
+      });
+      expect(recurrenceService.createRuleAndMaterialize).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException (EXP004) if cardId is missing for recurring credit card expense', async () => {
+      prisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Services' });
+
+      await expect(
+        service.create('acc-1', {
+          description: 'Netflix',
+          amount: 55.9,
+          transactionDate: '2026-10-10T00:00:00.000Z',
+          paymentMethod: PaymentMethod.CREDIT_CARD,
+          categoryId: 'cat-1',
+          isRecurring: true,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('create - Non-Credit-Card Installments (Boleto, Pix, Debit)', () => {
     it('should create non-credit-card installment series with monthly due dates and no invoice allocation', async () => {
       prisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Services' });

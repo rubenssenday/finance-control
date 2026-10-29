@@ -5,7 +5,13 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Invoice, InvoiceStatus, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  Invoice,
+  InvoiceStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import {
   calculateCycleDates,
   resolveCycleForTransaction,
@@ -191,6 +197,13 @@ export class InvoicesService {
       card.dueDay,
     );
 
+    await this.syncOrphanedCardExpenses(
+      accountId,
+      cardId,
+      card.closingDay,
+      card.dueDay,
+    );
+
     const whereClause: Prisma.InvoiceWhereInput = {
       cardId,
       accountId,
@@ -206,6 +219,73 @@ export class InvoicesService {
     });
 
     return invoices.map((inv) => this.serializeInvoice(inv));
+  }
+
+  /**
+   * Syncs any credit card expenses for this card that are missing invoiceId,
+   * associating them with the correct cycle invoice and incrementing invoice totals.
+   */
+  async syncOrphanedCardExpenses(
+    accountId: string,
+    cardId: string,
+    closingDay: number,
+    dueDay: number,
+  ): Promise<number> {
+    if (!this.prisma.expense?.findMany) {
+      return 0;
+    }
+
+    const orphaned = await this.prisma.expense.findMany({
+      where: {
+        accountId,
+        cardId,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+        invoiceId: null,
+      },
+    });
+
+    if (orphaned.length === 0) return 0;
+
+    for (const exp of orphaned) {
+      const cycle = resolveCycleForTransaction(exp.transactionDate, closingDay);
+
+      await this.ensureCycleInvoices(
+        accountId,
+        cardId,
+        closingDay,
+        dueDay,
+        new Date(Date.UTC(cycle.billingYear, cycle.billingMonth - 1, 1)),
+      );
+
+      const targetInvoice = await this.prisma.invoice.findFirst({
+        where: {
+          cardId,
+          billingYear: cycle.billingYear,
+          billingMonth: cycle.billingMonth,
+        },
+      });
+
+      if (targetInvoice) {
+        await this.prisma.expense.update({
+          where: { id: exp.id },
+          data: {
+            invoiceId: targetInvoice.id,
+            dueDate: targetInvoice.dueDate,
+          },
+        });
+
+        await this.prisma.invoice.update({
+          where: { id: targetInvoice.id },
+          data: {
+            totalAmount: {
+              increment: exp.amount,
+            },
+          },
+        });
+      }
+    }
+
+    return orphaned.length;
   }
 
   /**
