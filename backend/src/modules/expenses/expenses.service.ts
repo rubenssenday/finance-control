@@ -12,7 +12,10 @@ import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { SettleExpenseDto } from './dto/settle-expense.dto';
 import { CsvConfirmRowDto } from './dto/csv-import.dto';
-import { calculateInstallments } from './utils/installment-math.util';
+import {
+  calculateInstallments,
+  addMonthsSafely,
+} from './utils/installment-math.util';
 import { resolveCycleForTransaction } from '../cards/utils/billing-cycle.util';
 import { calculateExpenseDisplayStatus } from './utils/expense-status.util';
 import {
@@ -294,7 +297,63 @@ export class ExpensesService {
       };
     }
 
-    // Flow 3: Single Cash Expense (Debit, Pix, Boleto)
+    // Flow 3: Non-Credit-Card Installment Series (Boleto, Pix, Debit Card)
+    const installmentCount = dto.installments || 1;
+    if (installmentCount > 1) {
+      const breakdowns = calculateInstallments(dto.amount, installmentCount);
+      const installmentGroupId = randomUUID();
+      const createdRecords: Expense[] = [];
+
+      let baseDueDate = txDate;
+      if (dto.dueDate) {
+        baseDueDate = new Date(dto.dueDate);
+      } else if (dto.paymentMethod === PaymentMethod.BOLETO) {
+        // Default Boleto due date = txDate + 3 days
+        baseDueDate = new Date(txDate.getTime() + 3 * 86400000);
+      }
+
+      for (let i = 0; i < breakdowns.length; i++) {
+        const breakdown = breakdowns[i];
+        const installmentDueDate = addMonthsSafely(baseDueDate, i);
+
+        // If marked as PAID initially: 1st installment is marked PAID with paidAt, future installments remain PENDING
+        const isFirstPaid = i === 0 && dto.paymentStatus === PaymentStatus.PAID;
+        const status = isFirstPaid ? PaymentStatus.PAID : PaymentStatus.PENDING;
+        const paidAt = isFirstPaid ? new Date() : null;
+
+        const expense = await this.prisma.expense.create({
+          data: {
+            accountId,
+            description: dto.description.trim(),
+            amount: new Prisma.Decimal(breakdown.amount.toFixed(2)),
+            transactionDate: txDate,
+            dueDate: installmentDueDate,
+            paymentMethod: dto.paymentMethod,
+            paymentStatus: status,
+            paidAt,
+            categoryId: dto.categoryId,
+            installmentGroupId,
+            installmentNumber: breakdown.installmentNumber,
+            installmentTotal: installmentCount,
+            notes: dto.notes ? dto.notes.trim() : null,
+          },
+          include: {
+            category: true,
+          },
+        });
+
+        createdRecords.push(expense);
+      }
+
+      return {
+        installmentGroupId,
+        totalAmount: dto.amount,
+        installmentsGenerated: createdRecords.length,
+        records: createdRecords,
+      };
+    }
+
+    // Flow 4: Single Cash Expense (Debit, Pix, Boleto)
     let calculatedDueDate = txDate;
     if (dto.dueDate) {
       calculatedDueDate = new Date(dto.dueDate);
@@ -303,6 +362,7 @@ export class ExpensesService {
       calculatedDueDate = new Date(txDate.getTime() + 3 * 86400000);
     }
 
+    const isPaid = dto.paymentStatus === PaymentStatus.PAID;
     const expense = await this.prisma.expense.create({
       data: {
         accountId,
@@ -311,7 +371,8 @@ export class ExpensesService {
         transactionDate: txDate,
         dueDate: calculatedDueDate,
         paymentMethod: dto.paymentMethod,
-        paymentStatus: dto.paymentStatus || PaymentStatus.PENDING,
+        paymentStatus: isPaid ? PaymentStatus.PAID : (dto.paymentStatus || PaymentStatus.PENDING),
+        paidAt: isPaid ? new Date() : null,
         categoryId: dto.categoryId,
         notes: dto.notes ? dto.notes.trim() : null,
       },

@@ -1,4 +1,7 @@
-import { calculateInstallments } from '../../src/modules/expenses/utils/installment-math.util';
+import {
+  calculateInstallments,
+  addMonthsSafely,
+} from '../../src/modules/expenses/utils/installment-math.util';
 
 describe('InstallmentMathUtil', () => {
   it('should calculate the exact PRD example: R$ 100.00 in 3 installments', () => {
@@ -59,4 +62,39 @@ describe('InstallmentMathUtil', () => {
   it('should throw an error if installmentCount < 1', () => {
     expect(() => calculateInstallments(100, 0)).toThrow();
   });
+
+  describe('addMonthsSafely', () => {
+    it('should add months correctly for standard days', () => {
+      const base = new Date(Date.UTC(2026, 9, 15)); // Oct 15, 2026
+      const month1 = addMonthsSafely(base, 1);
+      expect(month1.getUTCFullYear()).toBe(2026);
+      expect(month1.getUTCMonth()).toBe(10); // Nov
+      expect(month1.getUTCDate()).toBe(15);
+
+      const month3 = addMonthsSafely(base, 3);
+      expect(month3.getUTCFullYear()).toBe(2027);
+      expect(month3.getUTCMonth()).toBe(0); // Jan 2027
+      expect(month3.getUTCDate()).toBe(15);
+    });
+
+    it('should clamp days to the last day of month (e.g. Jan 31 -> Feb 28)', () => {
+      const base = new Date(Date.UTC(2026, 0, 31)); // Jan 31, 2026 (non-leap year)
+      const feb = addMonthsSafely(base, 1);
+      expect(feb.getUTCFullYear()).toBe(2026);
+      expect(feb.getUTCMonth()).toBe(1); // Feb
+      expect(feb.getUTCDate()).toBe(28);
+
+      const apr = addMonthsSafely(base, 3);
+      expect(apr.getUTCFullYear()).toBe(2026);
+      expect(apr.getUTCMonth()).toBe(3); // April has 30 days
+      expect(apr.getUTCDate()).toBe(30);
+    });
+
+    it('should return clone when monthsToAdd is 0', () => {
+      const base = new Date(Date.UTC(2026, 5, 20));
+      const res = addMonthsSafely(base, 0);
+      expect(res.getTime()).toBe(base.getTime());
+    });
+  });
 });
+

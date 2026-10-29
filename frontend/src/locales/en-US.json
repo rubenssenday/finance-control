@@ -201,6 +201,10 @@
       "singleInstallment": "1x (Single charge)",
       "multipleInstallments": "{n}x installments",
       "boletoDueDate": "Boleto Due Date (defaults to +3 days)",
+      "boletoFirstDueDate": "Due Date for 1st Boleto (default: +3 days)",
+      "firstInstallmentDueDate": "Due Date for 1st Installment",
+      "dueDateOptional": "Due Date (optional)",
+      "firstInstallmentPaidNote": "The 1st installment will be recorded as Paid (down payment) and the rest will remain Pending.",
       "saveChanges": "Save Changes",
       "recordExpense": "Record Expense",
       "amountLabel": "Amount (BRL) *"

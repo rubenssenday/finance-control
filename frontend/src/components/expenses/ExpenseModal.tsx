@@ -227,8 +227,7 @@ export function ExpenseModal({
             paymentStatus,
             categoryId,
             cardId: paymentMethod === 'CREDIT_CARD' ? cardId : undefined,
-            installments:
-              paymentMethod === 'CREDIT_CARD' ? installments : 1,
+            installments: isRecurring ? 1 : installments,
             isRecurring,
             dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
             notes: notes ? notes.trim() : null,
@@ -498,56 +497,118 @@ export function ExpenseModal({
             </div>
           )}
 
-          {/* Conditional: Boleto Custom Due Date */}
-          {paymentMethod === 'BOLETO' && (
-            <div>
-              <label
-                htmlFor="expense-due-date"
-                className="block text-xs font-semibold text-slate-700 mb-1"
-              >
-                {t('expenses.form.boletoDueDate')}
-              </label>
-              <input
-                id="expense-due-date"
-                name="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-              />
+          {/* Conditional: Direct Payment Options & Installments (Boleto, Pix, Debit) */}
+          {paymentMethod !== 'CREDIT_CARD' && (
+            <div className="p-3.5 bg-slate-50/70 border border-slate-200/80 rounded-2xl space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Due Date (Custom / 1st installment) */}
+                <div>
+                  <label
+                    htmlFor="expense-due-date"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    {paymentMethod === 'BOLETO'
+                      ? installments > 1
+                        ? t('expenses.form.boletoFirstDueDate')
+                        : t('expenses.form.boletoDueDate')
+                      : installments > 1
+                      ? t('expenses.form.firstInstallmentDueDate')
+                      : t('expenses.form.dueDateOptional')}
+                  </label>
+                  <input
+                    id="expense-due-date"
+                    name="dueDate"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-white border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+
+                {/* Non-Credit-Card Installment Count */}
+                {!isEditing && !isRecurring && (
+                  <div>
+                    <label
+                      htmlFor="expense-installments-direct"
+                      className="block text-xs font-semibold text-slate-700 mb-1"
+                    >
+                      {t('expenses.form.installmentCount')} (1x - 72x)
+                    </label>
+                    <select
+                      id="expense-installments-direct"
+                      name="installments"
+                      value={installments}
+                      onChange={(e) =>
+                        setInstallments(parseInt(e.target.value, 10))
+                      }
+                      className="w-full px-3 py-2 rounded-xl text-xs bg-white border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    >
+                      {Array.from({ length: 72 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n}x {n === 1 ? `(${t('expenses.form.singleInstallment')})` : t('expenses.form.multipleInstallments', { n })}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Installments Simulation Schedule for Direct Payments */}
+              {installments > 1 && !isRecurring && (
+                <InstallmentPreviewTable
+                  totalAmount={parseFloat(amount) || 0}
+                  installmentCount={installments}
+                  transactionDate={new Date(transactionDate)}
+                  baseDueDate={
+                    dueDate
+                      ? new Date(dueDate)
+                      : paymentMethod === 'BOLETO'
+                      ? new Date(new Date(transactionDate).getTime() + 3 * 86400000)
+                      : new Date(transactionDate)
+                  }
+                  firstInstallmentPaid={paymentStatus === 'PAID'}
+                />
+              )}
             </div>
           )}
 
           {/* Direct Cash Payment Status Toggle */}
           {paymentMethod !== 'CREDIT_CARD' && (
-            <div className="flex items-center space-x-3 pt-1">
-              <label className="text-xs font-semibold text-slate-700">
-                {t('expenses.form.statusToggle')}
-              </label>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentStatus('PAID')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                    paymentStatus === 'PAID'
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                      : 'bg-white border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {t('expenses.form.paidNow')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentStatus('PENDING')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                    paymentStatus === 'PENDING'
-                      ? 'bg-amber-50 border-amber-300 text-amber-700'
-                      : 'bg-white border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {t('expenses.form.pendingStatus')}
-                </button>
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center space-x-3">
+                <label className="text-xs font-semibold text-slate-700">
+                  {t('expenses.form.statusToggle')}
+                </label>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentStatus('PAID')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                      paymentStatus === 'PAID'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                        : 'bg-white border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {t('expenses.form.paidNow')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentStatus('PENDING')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                      paymentStatus === 'PENDING'
+                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        : 'bg-white border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {t('expenses.form.pendingStatus')}
+                  </button>
+                </div>
               </div>
+              {installments > 1 && paymentStatus === 'PAID' && (
+                <p className="text-[11px] text-emerald-700 font-medium">
+                  {t('expenses.form.firstInstallmentPaidNote')}
+                </p>
+              )}
             </div>
           )}
 
@@ -559,7 +620,10 @@ export function ExpenseModal({
                 name="isRecurring"
                 type="checkbox"
                 checked={isRecurring}
-                onChange={(e) => setIsRecurring(e.target.checked)}
+                onChange={(e) => {
+                  setIsRecurring(e.target.checked);
+                  if (e.target.checked) setInstallments(1);
+                }}
                 className="w-4 h-4 text-indigo-600 rounded-md border-slate-300 focus:ring-indigo-500"
               />
               <label

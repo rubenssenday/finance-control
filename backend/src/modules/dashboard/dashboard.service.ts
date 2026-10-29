@@ -290,6 +290,8 @@ export class DashboardService {
         displayStatus,
         daysOverdue,
         paidAt: exp.paidAt ? exp.paidAt.toISOString() : null,
+        installmentNumber: exp.installmentNumber,
+        installmentTotal: exp.installmentTotal,
         updatedAt: exp.updatedAt.toISOString(),
         category: exp.category,
       };

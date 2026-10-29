@@ -201,6 +201,10 @@
       "singleInstallment": "1x (À vista)",
       "multipleInstallments": "{n}x parcelas",
       "boletoDueDate": "Data de Vencimento do Boleto (padrão: +3 dias)",
+      "boletoFirstDueDate": "Data de Vencimento do 1º Boleto (padrão: +3 dias)",
+      "firstInstallmentDueDate": "Data de Vencimento da 1ª Parcela",
+      "dueDateOptional": "Data de Vencimento (opcional)",
+      "firstInstallmentPaidNote": "A 1ª parcela será registrada como Paga (entrada) e as demais ficarão Pendentes.",
       "saveChanges": "Salvar Alterações",
       "recordExpense": "Registrar Despesa",
       "amountLabel": "Valor (BRL) *"

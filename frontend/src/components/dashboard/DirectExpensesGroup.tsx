@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Clock,
   ChevronDown,
+  Layers,
 } from 'lucide-react';
 
 interface DirectExpensesGroupProps {
@@ -196,7 +197,17 @@ export function DirectExpensesGroup({
                             </span>
                           </td>
                           <td className="py-3 px-3 font-bold text-slate-900">
-                            {item.description}
+                            <div className="flex items-center space-x-1.5">
+                              <span>{item.description}</span>
+                              {item.installmentNumber && item.installmentTotal && (
+                                <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-800 border border-violet-200">
+                                  <Layers className="w-2.5 h-2.5" />
+                                  <span>
+                                    {item.installmentNumber}/{item.installmentTotal}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             {item.category ? (

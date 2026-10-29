@@ -53,3 +53,32 @@ export function calculateInstallments(
 
   return result;
 }
+
+/**
+ * Safely adds months to a base date preserving the day of month,
+ * clamping to the last valid day of the target month (e.g. Jan 31 + 1 mo = Feb 28).
+ */
+export function addMonthsSafely(baseDate: Date, monthsToAdd: number): Date {
+  if (monthsToAdd === 0) {
+    return new Date(baseDate.getTime());
+  }
+
+  const year = baseDate.getUTCFullYear();
+  const month = baseDate.getUTCMonth();
+  const day = baseDate.getUTCDate();
+  const hours = baseDate.getUTCHours();
+  const minutes = baseDate.getUTCMinutes();
+  const seconds = baseDate.getUTCSeconds();
+  const ms = baseDate.getUTCMilliseconds();
+
+  const totalMonths = month + monthsToAdd;
+  const targetYear = year + Math.floor(totalMonths / 12);
+  const targetMonth = ((totalMonths % 12) + 12) % 12;
+
+  // Day 0 of (targetMonth + 1) in UTC gives the last day of targetMonth
+  const maxDays = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const targetDay = Math.min(day, maxDays);
+
+  return new Date(Date.UTC(targetYear, targetMonth, targetDay, hours, minutes, seconds, ms));
+}
+

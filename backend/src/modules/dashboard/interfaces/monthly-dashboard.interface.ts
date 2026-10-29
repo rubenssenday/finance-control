@@ -82,6 +82,8 @@ export interface DirectExpenseItem {
   displayStatus: 'PAID' | 'PENDING' | 'OVERDUE';
   daysOverdue: number;
   paidAt?: string | null;
+  installmentNumber?: number | null;
+  installmentTotal?: number | null;
   updatedAt: string;
   category: CategoryRef;
 }

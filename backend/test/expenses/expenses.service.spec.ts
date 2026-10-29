@@ -151,6 +151,70 @@ describe('ExpensesService', () => {
     });
   });
 
+  describe('create - Non-Credit-Card Installments (Boleto, Pix, Debit)', () => {
+    it('should create non-credit-card installment series with monthly due dates and no invoice allocation', async () => {
+      prisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Services' });
+      prisma.expense.create.mockImplementation(({ data }) => Promise.resolve({ id: 'exp-gen', ...data }));
+
+      const result = await service.create('acc-1', {
+        description: 'Dentist Treatment',
+        amount: 300.0,
+        transactionDate: '2026-10-15T10:00:00.000Z',
+        paymentMethod: PaymentMethod.BOLETO,
+        categoryId: 'cat-1',
+        dueDate: '2026-11-05T00:00:00.000Z',
+        installments: 3,
+        paymentStatus: PaymentStatus.PAID, // 1st paid, 2nd & 3rd pending
+      });
+
+      expect(result.installmentsGenerated).toBe(3);
+      expect(result.installmentGroupId).toBeTruthy();
+      expect(prisma.expense.create).toHaveBeenCalledTimes(3);
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+
+      // Verify installment 1 is PAID with paidAt, installments 2 and 3 are PENDING
+      const calls = prisma.expense.create.mock.calls;
+      const inst1 = calls[0][0].data;
+      const inst2 = calls[1][0].data;
+      const inst3 = calls[2][0].data;
+
+      expect(inst1.installmentNumber).toBe(1);
+      expect(inst1.paymentStatus).toBe(PaymentStatus.PAID);
+      expect(inst1.paidAt).toBeInstanceOf(Date);
+      expect(new Date(inst1.dueDate).getUTCMonth()).toBe(10); // Nov
+
+      expect(inst2.installmentNumber).toBe(2);
+      expect(inst2.paymentStatus).toBe(PaymentStatus.PENDING);
+      expect(inst2.paidAt).toBeNull();
+      expect(new Date(inst2.dueDate).getUTCMonth()).toBe(11); // Dec
+
+      expect(inst3.installmentNumber).toBe(3);
+      expect(inst3.paymentStatus).toBe(PaymentStatus.PENDING);
+      expect(inst3.paidAt).toBeNull();
+      expect(new Date(inst3.dueDate).getUTCMonth()).toBe(0); // Jan 2027
+    });
+
+    it('should mark all installments as PENDING when paymentStatus is PENDING', async () => {
+      prisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Services' });
+      prisma.expense.create.mockImplementation(({ data }) => Promise.resolve({ id: 'exp-gen', ...data }));
+
+      const result = await service.create('acc-1', {
+        description: 'Gym Plan',
+        amount: 200.0,
+        transactionDate: '2026-10-15T10:00:00.000Z',
+        paymentMethod: PaymentMethod.PIX,
+        categoryId: 'cat-1',
+        installments: 2,
+        paymentStatus: PaymentStatus.PENDING,
+      });
+
+      expect(result.installmentsGenerated).toBe(2);
+      const calls = prisma.expense.create.mock.calls;
+      expect(calls[0][0].data.paymentStatus).toBe(PaymentStatus.PENDING);
+      expect(calls[1][0].data.paymentStatus).toBe(PaymentStatus.PENDING);
+    });
+  });
+
   describe('delete', () => {
     it('should delete future installments when scope is FUTURE', async () => {
       prisma.expense.findFirst.mockResolvedValue({
