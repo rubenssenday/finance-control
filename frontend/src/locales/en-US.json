@@ -339,6 +339,8 @@
     "subtitle": "Manage your card network limits, closing dates, and monthly statement invoices.",
     "newCard": "New Card",
     "editCard": "Edit Card",
+    "viewInvoices": "View Invoices",
+    "hideInvoices": "Hide Invoices",
     "loading": "Loading credit cards...",
     "deletePrompt": "Are you sure you want to delete card {name}?",
     "archiveSuccess": "Card \"{name}\" archived successfully.",

@@ -339,6 +339,8 @@
     "subtitle": "Gerencie limites das bandeiras, datas de fechamento e faturas mensais.",
     "newCard": "Novo Cartão",
     "editCard": "Editar Cartão",
+    "viewInvoices": "Ver Faturas",
+    "hideInvoices": "Ocultar Faturas",
     "loading": "Carregando cartões de crédito...",
     "deletePrompt": "Tem certeza que deseja excluir o cartão {name}?",
     "archiveSuccess": "Cartão \"{name}\" arquivado com sucesso.",

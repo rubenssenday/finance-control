@@ -43,10 +43,10 @@ export default function CardsPage() {
   const [cardToDelete, setCardToDelete] = useState<CardData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchCards = useCallback(async () => {
+  const fetchCards = useCallback(async (showLoading = true) => {
     if (!activeAccount) return;
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       setError(null);
       const res = await apiClient<{
         status: string;
@@ -57,7 +57,7 @@ export default function CardsPage() {
     } catch (err: any) {
       setError(err.message || 'Failed to load credit cards.');
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   }, [activeAccount]);
 
@@ -324,7 +324,7 @@ export default function CardsPage() {
               onEdit={handleOpenEditModal}
               onDelete={handleDeletePrompt}
               onToggleArchive={handleToggleArchive}
-              onInvoiceSettled={fetchCards}
+              onInvoiceSettled={() => fetchCards(false)}
             />
           ))}
         </div>

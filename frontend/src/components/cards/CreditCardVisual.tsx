@@ -73,10 +73,12 @@ export function CreditCardVisual({
         status: string;
         data: InvoiceData[];
       }>(`/cards/${card.id}/invoices`);
-      setInvoices(res.data || []);
-      if (onInvoiceSettled) {
-        onInvoiceSettled();
-      }
+      const invoiceList = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+      setInvoices(invoiceList);
     } catch (err) {
       console.error('Failed to load card invoices:', err);
     } finally {
@@ -198,7 +200,7 @@ export function CreditCardVisual({
           className="inline-flex items-center space-x-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
         >
           <Receipt className="w-3.5 h-3.5" />
-          <span>{isExpanded ? (t('common.close') + ' ' + t('dashboard.creditCardsBlock.title')) : (t('common.search') + ' ' + t('dashboard.creditCardsBlock.title'))}</span>
+          <span>{isExpanded ? t('cards.hideInvoices') : t('cards.viewInvoices')}</span>
           {isExpanded ? (
             <ChevronUp className="w-3.5 h-3.5" />
           ) : (
@@ -248,7 +250,12 @@ export function CreditCardVisual({
             isLoading={isLoadingInvoices}
             cardNickname={card.nickname}
             cardBrand={card.brand}
-            onInvoiceSettled={fetchInvoices}
+            onInvoiceSettled={async () => {
+              await fetchInvoices();
+              if (onInvoiceSettled) {
+                onInvoiceSettled();
+              }
+            }}
           />
         </div>
       )}
