@@ -15,9 +15,37 @@ interface InstallmentPreviewTableProps {
   totalAmount: number;
   installmentCount: number;
   closingDay?: number;
-  transactionDate: Date;
-  baseDueDate?: Date;
+  transactionDate: Date | string;
+  baseDueDate?: Date | string;
   firstInstallmentPaid?: boolean;
+}
+
+function extractDateParts(date: Date | string): { year: number; month: number; day: number } {
+  if (typeof date === 'string') {
+    const datePart = date.includes('T') ? date.split('T')[0] : date;
+    const parts = datePart.split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return { year: parts[0], month: parts[1], day: parts[2] };
+    }
+  }
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  };
+}
+
+function parseDateSafely(dateInput?: Date | string): Date | undefined {
+  if (!dateInput) return undefined;
+  if (typeof dateInput === 'string') {
+    const datePart = dateInput.includes('T') ? dateInput.split('T')[0] : dateInput;
+    const parts = datePart.split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+    }
+  }
+  return new Date(dateInput);
 }
 
 function addMonthsSafely(baseDate: Date, monthsToAdd: number): Date {
@@ -63,13 +91,12 @@ export function InstallmentPreviewTable({
 
   if (isCreditCard) {
     // Credit card invoice cycle calculation
-    const txDay = transactionDate.getUTCDate();
-    const txMonth = transactionDate.getUTCMonth() + 1;
-    const txYear = transactionDate.getUTCFullYear();
+    const { year: txYear, month: txMonth, day: txDay } = extractDateParts(transactionDate);
 
     let startYear = txYear;
     let startMonth = txMonth;
-    if (txDay > (closingDay as number)) {
+    // Purchases on or after closing day belong to the next billing cycle
+    if (txDay >= (closingDay as number)) {
       startMonth = txMonth === 12 ? 1 : txMonth + 1;
       startYear = txMonth === 12 ? txYear + 1 : txYear;
     }
@@ -94,7 +121,10 @@ export function InstallmentPreviewTable({
     }
   } else {
     // Non-credit card (Boleto, Pix, Debit) monthly due dates
-    const effectiveBaseDate = baseDueDate || transactionDate;
+    const effectiveBaseDate =
+      parseDateSafely(baseDueDate) ||
+      parseDateSafely(transactionDate) ||
+      new Date();
 
     for (let i = 1; i <= installmentCount; i++) {
       const cents = i === 1 ? baseCents + remainderCents : baseCents;

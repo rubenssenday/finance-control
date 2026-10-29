@@ -477,7 +477,7 @@ export function ExpenseModal({
                     >
                       {Array.from({ length: 72 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
-                          {n}x {n === 1 ? `(${t('expenses.form.singleInstallment')})` : t('expenses.form.multipleInstallments', { n })}
+                          {n === 1 ? t('expenses.form.singleInstallment') : t('expenses.form.multipleInstallments', { n })}
                         </option>
                       ))}
                     </select>
@@ -491,7 +491,7 @@ export function ExpenseModal({
                   totalAmount={parseFloat(amount) || 0}
                   installmentCount={installments}
                   closingDay={selectedCard.closingDay}
-                  transactionDate={new Date(transactionDate)}
+                  transactionDate={transactionDate}
                 />
               )}
             </div>
@@ -545,7 +545,7 @@ export function ExpenseModal({
                     >
                       {Array.from({ length: 72 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
-                          {n}x {n === 1 ? `(${t('expenses.form.singleInstallment')})` : t('expenses.form.multipleInstallments', { n })}
+                          {n === 1 ? t('expenses.form.singleInstallment') : t('expenses.form.multipleInstallments', { n })}
                         </option>
                       ))}
                     </select>

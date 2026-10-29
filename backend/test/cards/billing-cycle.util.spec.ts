@@ -85,25 +85,42 @@ describe('BillingCycleUtil', () => {
   });
 
   describe('resolveCycleForTransaction', () => {
-    it('should allocate to current month invoice when purchase is made on or before closing day', () => {
-      // Closing day is 15
-      const txOnClosing = new Date(Date.UTC(2026, 9, 15, 12, 0, 0)); // Oct 15
-      const cycle = resolveCycleForTransaction(txOnClosing, 15);
-      expect(cycle).toEqual({ billingYear: 2026, billingMonth: 10 });
-
+    it('should allocate to current month invoice when purchase is made BEFORE closing day', () => {
+      // Closing day is 15, purchase on Oct 5 or Oct 14
       const txBeforeClosing = new Date(Date.UTC(2026, 9, 5, 10, 0, 0)); // Oct 5
       const cycleBefore = resolveCycleForTransaction(txBeforeClosing, 15);
       expect(cycleBefore).toEqual({ billingYear: 2026, billingMonth: 10 });
+
+      const txDayBeforeClosing = new Date(Date.UTC(2026, 9, 14, 23, 0, 0)); // Oct 14
+      const cycleDayBefore = resolveCycleForTransaction(txDayBeforeClosing, 15);
+      expect(cycleDayBefore).toEqual({ billingYear: 2026, billingMonth: 10 });
     });
 
-    it('should allocate to subsequent month invoice when purchase is made after closing day', () => {
+    it('should allocate to subsequent month invoice when purchase is made ON or after closing day', () => {
+      // Closing day is 15 ("melhor dia de compra"), purchase on Oct 15 goes to November
+      const txOnClosing = new Date(Date.UTC(2026, 9, 15, 12, 0, 0)); // Oct 15
+      const cycle = resolveCycleForTransaction(txOnClosing, 15);
+      expect(cycle).toEqual({ billingYear: 2026, billingMonth: 11 });
+
       // Closing day is 15, purchase on Oct 16
       const txAfterClosing = new Date(Date.UTC(2026, 9, 16, 10, 0, 0));
-      const cycle = resolveCycleForTransaction(txAfterClosing, 15);
-      expect(cycle).toEqual({ billingYear: 2026, billingMonth: 11 });
+      const cycleAfter = resolveCycleForTransaction(txAfterClosing, 15);
+      expect(cycleAfter).toEqual({ billingYear: 2026, billingMonth: 11 });
     });
 
-    it('should handle December rollover to January of next year when purchase is made after closing day in December', () => {
+    it('should allocate purchase made on closing day 4 on April 4th to May (04/04/2026 -> Mai/2026)', () => {
+      // User scenario: purchase on 2026-04-04 with card closingDay = 4
+      const tx = new Date(Date.UTC(2026, 3, 4, 12, 0, 0));
+      const cycle = resolveCycleForTransaction(tx, 4);
+      expect(cycle).toEqual({ billingYear: 2026, billingMonth: 5 });
+    });
+
+    it('should handle December rollover to January of next year when purchase is made on or after closing day in December', () => {
+      // Closing day is 20, purchase on Dec 20 (on closing day)
+      const txOnClosingInDec = new Date(Date.UTC(2026, 11, 20, 10, 0, 0));
+      const cycleOnClosing = resolveCycleForTransaction(txOnClosingInDec, 20);
+      expect(cycleOnClosing).toEqual({ billingYear: 2027, billingMonth: 1 });
+
       // Closing day is 20, purchase on Dec 21
       const txAfterClosingInDec = new Date(Date.UTC(2026, 11, 21, 10, 0, 0));
       const cycle = resolveCycleForTransaction(txAfterClosingInDec, 20);

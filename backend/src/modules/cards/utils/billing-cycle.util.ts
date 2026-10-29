@@ -76,8 +76,8 @@ export function calculateCycleDates(
  * and card's closing day.
  *
  * Rule:
- * - If transaction day <= clamped closing day for that month: allocated to current month's invoice.
- * - If transaction day > clamped closing day: allocated to subsequent month's invoice.
+ * - If transaction day < clamped closing day for that month: allocated to current month's invoice.
+ * - If transaction day >= clamped closing day: allocated to subsequent month's invoice (closing day is "melhor dia de compra").
  */
 export function resolveCycleForTransaction(
   transactionDate: Date,
@@ -89,7 +89,7 @@ export function resolveCycleForTransaction(
 
   const currentMonthClosingDay = clampDay(txYear, txMonth, closingDay);
 
-  if (txDay <= currentMonthClosingDay) {
+  if (txDay < currentMonthClosingDay) {
     return { billingYear: txYear, billingMonth: txMonth };
   }
 
