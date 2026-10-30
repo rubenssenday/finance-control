@@ -102,6 +102,28 @@ describe('ExpensesService', () => {
       const expectedDueDate = new Date(txDate.getTime() + 3 * 86400000);
       expect(new Date(result.dueDate).getTime()).toBe(expectedDueDate.getTime());
     });
+
+    it('should populate descriptionNormalized when creating an expense', async () => {
+      prisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Alimentação' });
+      prisma.expense.create.mockImplementation(({ data }) => Promise.resolve({ id: 'exp-1', ...data }));
+
+      await service.create('acc-1', {
+        description: 'Padaria & Café Especial',
+        amount: 25.5,
+        transactionDate: '2026-10-22T12:00:00.000Z',
+        paymentMethod: PaymentMethod.PIX,
+        categoryId: 'cat-1',
+      });
+
+      expect(prisma.expense.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            description: 'Padaria & Café Especial',
+            descriptionNormalized: 'padaria & cafe especial',
+          }),
+        }),
+      );
+    });
   });
 
   describe('create - Credit Card Installments', () => {
@@ -354,6 +376,28 @@ describe('ExpensesService', () => {
           transactionDate: {
             gte: new Date(Date.UTC(2026, 9, 1, 0, 0, 0)),
             lte: new Date(Date.UTC(2026, 10, 0, 23, 59, 59, 999)),
+          },
+        },
+        include: {
+          category: { select: { id: true, name: true, color: true, icon: true } },
+          card: { select: { id: true, nickname: true, brand: true } },
+        },
+        orderBy: [{ dueDate: 'asc' }, { transactionDate: 'asc' }],
+      });
+    });
+
+    it('should filter by descriptionNormalized when search query is provided with accents and mixed case', async () => {
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      await service.list('acc-1', {
+        search: '  Almoço no Itaú  ',
+      });
+
+      expect(prisma.expense.findMany).toHaveBeenCalledWith({
+        where: {
+          accountId: 'acc-1',
+          descriptionNormalized: {
+            contains: 'almoco no itau',
           },
         },
         include: {

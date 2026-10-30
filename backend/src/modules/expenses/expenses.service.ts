@@ -23,6 +23,7 @@ import {
   validateCsvRows,
   CsvRowValidationResult,
 } from './utils/csv-parser.util';
+import { normalizeSearch } from './utils/search-normalize.util';
 import {
   PaymentMethod,
   PaymentStatus,
@@ -72,9 +73,8 @@ export class ExpensesService {
     }
 
     if (filters.search && filters.search.trim()) {
-      where.description = {
-        contains: filters.search.trim(),
-        mode: 'insensitive',
+      where.descriptionNormalized = {
+        contains: normalizeSearch(filters.search),
       };
     }
 
@@ -273,6 +273,7 @@ export class ExpensesService {
           data: {
             accountId,
             description: dto.description.trim(),
+            descriptionNormalized: normalizeSearch(dto.description),
             amount: new Prisma.Decimal(breakdown.amount.toFixed(2)),
             transactionDate: txDate,
             dueDate,
@@ -346,6 +347,7 @@ export class ExpensesService {
           data: {
             accountId,
             description: dto.description.trim(),
+            descriptionNormalized: normalizeSearch(dto.description),
             amount: new Prisma.Decimal(breakdown.amount.toFixed(2)),
             transactionDate: txDate,
             dueDate: installmentDueDate,
@@ -388,6 +390,7 @@ export class ExpensesService {
       data: {
         accountId,
         description: dto.description.trim(),
+        descriptionNormalized: normalizeSearch(dto.description),
         amount: new Prisma.Decimal(dto.amount.toFixed(2)),
         transactionDate: txDate,
         dueDate: calculatedDueDate,
@@ -419,6 +422,7 @@ export class ExpensesService {
 
     if (dto.description) {
       dataToUpdate.description = dto.description.trim();
+      dataToUpdate.descriptionNormalized = normalizeSearch(dto.description);
     }
     if (dto.amount !== undefined) {
       const newAmount = new Prisma.Decimal(dto.amount.toFixed(2));
@@ -475,6 +479,7 @@ export class ExpensesService {
         },
         data: {
           description: dataToUpdate.description,
+          descriptionNormalized: dataToUpdate.descriptionNormalized,
           categoryId: dto.categoryId,
         },
       });

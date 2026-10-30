@@ -11,6 +11,7 @@ import {
   clampDay,
   resolveCycleForTransaction,
 } from '../cards/utils/billing-cycle.util';
+import { normalizeSearch } from './utils/search-normalize.util';
 
 export interface CreateRecurrenceParams {
   accountId: string;
@@ -126,6 +127,7 @@ export class RecurrenceService {
       expensesToCreate.push({
         accountId: rule.accountId,
         description: rule.description,
+        descriptionNormalized: normalizeSearch(rule.description),
         amount: rule.amount,
         transactionDate: targetDate,
         dueDate,

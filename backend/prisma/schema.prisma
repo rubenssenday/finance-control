@@ -234,35 +234,37 @@ model RecurrenceRule {
 model Expense {
   id                 String          @id @default(uuid()) @db.Uuid
   accountId          String          @map("account_id") @db.Uuid
-  description        String          @db.VarChar(100)
-  amount             Decimal         @db.Decimal(12, 2)
-  transactionDate    DateTime        @map("transaction_date") @db.Timestamptz()
-  dueDate            DateTime        @map("due_date") @db.Timestamptz()
-  paymentMethod      PaymentMethod   @map("payment_method")
-  paymentStatus      PaymentStatus   @default(PENDING) @map("payment_status")
-  paidAt             DateTime?       @map("paid_at") @db.Timestamptz()
-  categoryId         String          @map("category_id") @db.Uuid
-  cardId             String?         @map("card_id") @db.Uuid
-  invoiceId          String?         @map("invoice_id") @db.Uuid
-  installmentGroupId String?         @map("installment_group_id") @db.Uuid
-  installmentNumber  Int?            @map("installment_number")
-  installmentTotal   Int?            @map("installment_total")
-  isRecurring        Boolean         @default(false) @map("is_recurring")
-  recurrenceRuleId   String?         @map("recurrence_rule_id") @db.Uuid
-  notes              String?         @db.VarChar(255)
-  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz()
+  description           String          @db.VarChar(100)
+  descriptionNormalized String          @default("") @map("description_normalized") @db.VarChar(100)
+  amount                Decimal         @db.Decimal(12, 2)
+  transactionDate       DateTime        @map("transaction_date") @db.Timestamptz()
+  dueDate               DateTime        @map("due_date") @db.Timestamptz()
+  paymentMethod         PaymentMethod   @map("payment_method")
+  paymentStatus         PaymentStatus   @default(PENDING) @map("payment_status")
+  paidAt                DateTime?       @map("paid_at") @db.Timestamptz()
+  categoryId            String          @map("category_id") @db.Uuid
+  cardId                String?         @map("card_id") @db.Uuid
+  invoiceId             String?         @map("invoice_id") @db.Uuid
+  installmentGroupId    String?         @map("installment_group_id") @db.Uuid
+  installmentNumber     Int?            @map("installment_number")
+  installmentTotal      Int?            @map("installment_total")
+  isRecurring           Boolean         @default(false) @map("is_recurring")
+  recurrenceRuleId      String?         @map("recurrence_rule_id") @db.Uuid
+  notes                 String?         @db.VarChar(255)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime        @updatedAt @map("updated_at") @db.Timestamptz()
 
-  account            Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  category           Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  card               CreditCard?     @relation(fields: [cardId], references: [id], onDelete: Restrict)
-  invoice            Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  recurrenceRule     RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: SetNull)
+  account               Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category              Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  card                  CreditCard?     @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  invoice               Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  recurrenceRule        RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: SetNull)
 
   @@index([accountId, transactionDate], name: "ix_expenses_account_date")
   @@index([accountId, paymentMethod], name: "ix_expenses_account_method")
   @@index([accountId, paymentStatus], name: "ix_expenses_account_status")
   @@index([accountId, paidAt], name: "ix_expenses_account_paid_at")
+  @@index([accountId, descriptionNormalized], name: "ix_expenses_account_description_normalized")
   @@index([invoiceId], name: "ix_expenses_invoice_id")
   @@index([installmentGroupId], name: "ix_expenses_installment_group")
   @@index([recurrenceRuleId], name: "ix_expenses_recurrence_rule")
